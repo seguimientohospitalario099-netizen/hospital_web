@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Control - Hospital San José</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #3b3a6b;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: #2b1b54;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding-top: 30px;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-circle {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-circle i {
+            color: #28a745;
+            font-size: 30px;
+        }
+
+        .sidebar-logo h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .sidebar nav a {
+            color: #a39eb8;
+            text-decoration: none;
+            padding: 16px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .sidebar nav a:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar nav a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 600;
+        }
+
+        .sidebar nav a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: #ffffff;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .logout-container {
+            padding: 20px 30px;
+            margin-top: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logout-container a {
+            color: #ffbaba;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px 50px;
+            overflow-y: auto;
+            background-color: #3b3a6b;
+            scroll-behavior: smooth;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+
+        .welcome-text h1 {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .welcome-text p {
+            color: #c4c1d9;
+            font-size: 14px;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .search-bar {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-bar i {
+            color: #c4c1d9;
+            font-size: 14px;
+        }
+
+        .search-bar input {
+            background: none;
+            border: none;
+            color: white;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .search-bar input::placeholder {
+            color: #c4c1d9;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 15px 5px 5px;
+            border-radius: 30px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #3b3a6b;
+            font-weight: bold;
+        }
+
+        .user-profile span {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        h3.card-title {
+            color: #2b1b54;
+            font-size: 18px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+            background: #f8faff;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid #edf1fa;
+        }
+
+        .form-grid label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #7b839e;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .form-grid input,
+        .form-grid select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #d5dae8;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 13px;
+            outline: none;
+            transition: 0.3s;
+            background: white;
+        }
+
+        .form-grid input:focus,
+        .form-grid select:focus {
+            border-color: #5532d8;
+            box-shadow: 0 0 0 3px rgba(85, 50, 216, 0.1);
+        }
+
+        button.btn-primary {
+            background: #5532d8;
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.3s;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button.btn-primary:hover {
+            background: #4224b5;
+            transform: translateY(-2px);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            background: white;
+            color: #7b839e;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-bottom: 2px solid #edf1fa;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #edf1fa;
+            font-size: 14px;
+            color: #43405c;
+            font-weight: 500;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .role-badge {
+            background: #edf1fa;
+            color: #5532d8;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .role-badge.admin {
+            background: #feeef4;
+            color: #d83255;
+        }
+
+        .role-badge.dev {
+            background: #eefdf4;
+            color: #23a055;
+        }
+
+        .flashes {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .flash-msg {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .error {
+            background: #ffffff;
+            color: #d32f2f;
+            border-left: 5px solid #d32f2f;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .success {
+            background: #ffffff;
+            color: #2e7d32;
+            border-left: 5px solid #2e7d32;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-link {
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+
+        .action-edit {
+            color: #5532d8;
+            background: rgba(85, 50, 216, 0.05);
+        }
+
+        .action-edit:hover {
+            background: rgba(85, 50, 216, 0.15);
+        }
+
+        .action-delete {
+            color: #e53935;
+            background: rgba(229, 57, 53, 0.05);
+            margin-left: 10px;
+        }
+
+        .action-delete:hover {
+            background: rgba(229, 57, 53, 0.15);
+        }
+
+        details summary {
+            list-style: none;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .edit-form-dropdown {
+            position: absolute;
+            right: 80px;
+            background: white;
+            border: 1px solid #edf1fa;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            width: 250px;
+            top: -10px;
+        }
+
+        .edit-form-dropdown label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #7b839e;
+            margin-top: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .edit-form-dropdown input,
+        .edit-form-dropdown select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d5dae8;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            margin-bottom: 5px;
+        }
+
+        .edit-form-dropdown input:focus,
+        .edit-form-dropdown select:focus {
+            border-color: #5532d8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-circle">
+                <i class="fas fa-hospital-symbol"></i>
+            </div>
+            <h2>San José</h2>
+        </div>
+        <nav>
+            <a href="#" onclick="showSection(event, 'dashboard')"
+                class="nav-link {{ 'active' if seccion == 'dashboard' else '' }}"><i class="fas fa-home"></i>
+                Dashboard</a>
+            <a href="#" onclick="showSection(event, 'gestion-usuarios')"
+                class="nav-link {{ 'active' if seccion == 'gestion-usuarios' else '' }}"><i class="fas fa-users"></i>
+                Gestión Usuarios</a>
+            <a href="#" onclick="showSection(event, 'ingreso-pacientes')"
+                class="nav-link {{ 'active' if seccion == 'ingreso-pacientes' else '' }}"><i
+                    class="fas fa-user-plus"></i> Ingreso Pacientes</a>
+            <a href="#" onclick="showSection(event, 'seguimiento-pacientes')"
+                class="nav-link {{ 'active' if seccion == 'seguimiento-pacientes' else '' }}"><i
+                    class="fas fa-notes-medical"></i> Seguimiento</a>
+            <a href="#" onclick="showSection(event, 'reportes')"
+                class="nav-link {{ 'active' if seccion == 'reportes' else '' }}"><i class="fas fa-chart-pie"></i>
+                Reportes</a>
+        </nav>
+        <div class="logout-container">
+            <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="header-top">
+            <div class="welcome-text">
+                <h1>¡Bienvenido, {{ session.get('user', 'Usuario') | title }}!</h1>
+                <p>Aquí tienes tu panel de administración ({{ session.get('rol', '') | title }})</p>
+            </div>
+            <div class="top-bar-right">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar consulta...">
+                </div>
+                <div class="user-profile">
+                    <div class="user-avatar">{{ session.get('user', 'U')[0] | upper }}</div>
+                    <span>{{ session.get('user', 'Usuario') | title }}</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 5px;"></i>
+                </div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul class="flashes">
+            {% for message in messages %}
+            <li class="flash-msg {{ 'error' if 'Error' in message else 'success' }}">
+                <i class="fas {{ 'fa-exclamation-circle' if 'Error' in message else 'fa-check-circle' }}"></i>
+                {{ message }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Secciones estilo SPA, precargadas y controladas por JS -->
+        <div class="card section-container" id="section-dashboard"
+            style="{{ 'display:block;' if seccion == 'dashboard' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-chart-line"></i> Resumen del Sistema</h3>
+            <p style="color: #6c6a85;">Bienvenido al resumen estadístico del hospital.</p>
+        </div>
+
+        <div class="card section-container" id="section-gestion-usuarios"
+            style="{{ 'display:block;' if seccion == 'gestion-usuarios' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-user-cog"></i> Gestión de Cuentas</h3>
+
+            <form method="POST" action="{{ url_for('panel_control', seccion='gestion-usuarios') }}" class="form-grid">
+                <div>
+                    <label>Nuevo Usuario</label>
+                    <input type="text" name="nuevo_user" required placeholder="Ej: JuanPerez">
+                </div>
+                <div>
+                    <label>Contraseña</label>
+                    <input type="password" name="nueva_pass" required placeholder="••••••••">
+                </div>
+                <div>
+                    <label>Rol Asignado</label>
+                    <select name="rol">
+                        <option value="usuario">Usuario Estándar</option>
+                        {% if session.get('rol') == 'desarrollador' %}
+                        <option value="administrador">Administrador</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Añadir</button>
+            </form>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Tipo de Rol</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nombre, datos in usuarios_lista.items() %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 600;">{{ nombre }}</div>
+                                <div style="font-size: 11px; color: #a0a5ba; margin-top: 3px;">ID: #10{{ loop.index }}
+                                </div>
+                            </td>
+                            <td>
+                                {% set var_class = 'dev' if datos.rol == 'desarrollador' else ('admin' if datos.rol ==
+                                'administrador' else '') %}
+                                <span class="role-badge {{ var_class }}">
+                                    <i
+                                        class="fas {{ 'fa-code' if datos.rol == 'desarrollador' else ('fa-user-shield' if datos.rol == 'administrador' else 'fa-user') }}"></i>
+                                    {{ datos.rol | title }}
+                                </span>
+                            </td>
+                            <td style="text-align: right; position: relative;">
+
+                                {# LÓGICA DE SEGURIDAD #}
+                                {% set es_yo = (nombre == session.get('user')) %}
+                                {% set puede_editar = (session.get('rol') == 'desarrollador') or (session.get('rol') ==
+                                'administrador' and datos.rol == 'usuario') %}
+
+                                {% if puede_editar and not es_yo %}
+                                <details style="display: inline-block; text-align: left;">
+                                    <summary class="action-link action-edit" style="cursor: pointer;"><i
+                                            class="fas fa-edit"></i> Editar</summary>
+                                    <form action="{{ url_for('editar_usuario', nombre_original=nombre) }}" method="POST"
+                                        class="edit-form-dropdown">
+                                        <div
+                                            style="font-size: 14px; font-weight: 700; color: #2b1b54; margin-bottom: 5px; text-transform: none;">
+                                            Editar Acceso</div>
+                                        <label>Nombre Identificador</label>
+                                        <input type="text" name="edit_user" value="{{ nombre }}" required>
+                                        <label>Nueva Clave de acceso</label>
+                                        <input type="text" name="edit_pass" value="{{ datos.pass }}" required>
+                                        <label>Rol de Sistema</label>
+                                        <select name="edit_rol">
+                                            <option value="usuario" {{ 'selected' if datos.rol=='usuario' }}>Usuario
+                                                Estándar</option>
+                                            {% if session.get('rol') == 'desarrollador' %}
+                                            <option value="administrador" {{ 'selected' if datos.rol=='administrador'
+                                                }}>Administrador</option>
+                                            {% endif %}
+                                        </select>
+                                        <button type="submit" class="btn-primary"
+                                            style="width: 100%; margin-top: 15px;"><i class="fas fa-save"></i> Guardar
+                                            Cambios</button>
+                                    </form>
+                                </details>
+
+                                <a href="{{ url_for('eliminar_usuario', nombre_user=nombre) }}"
+                                    class="action-link action-delete"
+                                    onclick="return confirm('¿Seguro que deseas eliminar el acceso de {{ nombre }} permanentemente?')">
+                                    <i class="fas fa-trash-alt"></i> Eliminar
+                                </a>
+                                {% else %}
+                                <span style="color: #c4c1d9; font-size: 12px; font-weight: 500;"><i
+                                        class="fas fa-shield-alt"></i> Restringido</span>
+                                {% endif %}
+
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card section-container" id="section-ingreso-pacientes"
+            style="{{ 'display:block;' if seccion == 'ingreso-pacientes' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-file-excel"></i> Carga Masiva de Pacientes (Excel)</h3>
+            <p style="color: #6c6a85;">Sube tu Excel oficial para inyectar automáticamente todas las filas de pacientes
+                en la base de datos nacional del hospital.</p>
+
+            <div
+                style="background: #f4fbf7; border: 1.5px dashed #28a745; padding: 25px; border-radius: 12px; margin-top: 25px; margin-bottom: 35px;">
+                <form action="{{ url_for('upload_pacientes') }}" method="POST" enctype="multipart/form-data"
+                    class="form-grid"
+                    style="margin-bottom:0; background: transparent; border: none; padding: 0; align-items: center;">
+                    <div style="grid-column: span 2;">
+                        <label style="color:#28a745;"><i class="fas fa-paperclip"></i> Adjuntar Archivo de Registros
+                            Médicos</label>
+                        <input type="file" name="file" accept=".xlsx, .xls, .csv" required
+                            style="border: 1px solid #c3e6cb; background: white;">
+                    </div>
+                    <div>
+                        <button type="submit" class="btn-primary" style="background:#28a745; width:100%;"><i
+                                class="fas fa-cloud-upload-alt"></i> Procesar y Guardar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Reg</th>
+                            <th>Nombres y Apellidos</th>
+                            <th>DNI</th>
+                            <th>Edad / Sexo</th>
+                            <th>Celular</th>
+                            <th style="text-align: right;">Fec. Nacimiento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if pacientes_lista %}
+                        {% for p in pacientes_lista %}
+                        <tr>
+                            <td style="color: #a0a5ba; font-weight: 600;">{{ p.num_registro }}</td>
+                            <td>
+                                <div style="font-weight: 600; color: #2b1b54;">{{ p.nombres }}</div>
+                                <div style="font-size: 11px; color: #7b839e;">Est: {{ p.establecimiento or 'S/N' }}
+                                </div>
+                            </td>
+                            <td>{{ p.dni }}</td>
+                            <td>{{ p.edad }} <span style="color:#a0a5ba;">/</span> {{ p.genero | title }}</td>
+                            <td>{{ p.celular or 'N/A' }}</td>
+                            <td style="text-align: right; color: #43405c; font-size: 13px; font-weight: 500;">
+                                {{ (p.fec_naci or '')[:10] or '—' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding: 40px; color: #a0a5ba;">
+                                <i class="fas fa-file-medical-alt"
+                                    style="font-size:30px; margin-bottom:15px; opacity:0.5;"></i><br>
+                                La base de datos de pacientes está vacía.<br>Por favor sube un excel para empezar a
+                                registrarlos.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="card section-container" id="section-seguimiento-pacientes"
+            style="{{ 'display:block;' if seccion == 'seguimiento-pacientes' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-notes-medical"></i> Seguimiento de Pacientes</h3>
+
+            <!-- Selector de atención -->
+            <div style="display:flex; gap:12px; margin-bottom:28px;">
+                <button id="btn-aten1" onclick="seleccionarAtencion(1)" style="flex:1; padding:14px; border-radius:10px; font-weight:700; font-size:15px;
+                           border:2px solid #5532d8; background:#5532d8; color:white; cursor:pointer; transition:.2s;">
+                    <i class="fas fa-1"></i> PRIMERA ATENCIÓN
+                </button>
+                <button id="btn-aten2" onclick="seleccionarAtencion(2)" style="flex:1; padding:14px; border-radius:10px; font-weight:700; font-size:15px;
+                           border:2px solid #5532d8; background:white; color:#5532d8; cursor:pointer; transition:.2s;">
+                    <i class="fas fa-2"></i> SEGUNDA ATENCIÓN
+                </button>
+            </div>
+
+            <div style="display:flex; gap:24px; align-items:flex-start;">
+
+                <!-- Panel izquierdo: formulario de datos -->
+                <div style="flex:1; background:#f8faff; border-radius:14px; padding:28px; border:1px solid #edf1fa;">
+
+                    <!-- Buscar por DNI -->
+                    <div style="display:flex; gap:10px; margin-bottom:24px; align-items:flex-end;">
+                        <div style="flex:1;">
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Buscar
+                                por DNI</label>
+                            <input id="seg-dni-input" type="text" maxlength="8" placeholder=""
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:14px; outline:none;">
+                        </div>
+                        <button onclick="buscarPaciente()"
+                            style="padding:12px 22px; background:#5532d8; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer; height:44px; white-space:nowrap;">
+                            <i class="fas fa-search"></i> BUSCAR
+                        </button>
+                    </div>
+
+                    <!-- Nombre y DNI -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Nombre
+                                y Apellido</label>
+                            <input id="seg-nombre" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none; color:#2b1b54; font-weight:600;">
+                        </div>
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">DNI</label>
+                            <input id="seg-dni" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none; color:#2b1b54; font-weight:600;">
+                        </div>
+                    </div>
+
+                    <!-- Lote, N°FUA, Fecha -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Lote</label>
+                            <input id="seg-lote" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none;">
+                        </div>
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">N°
+                                FUA</label>
+                            <input id="seg-fua" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none;">
+                        </div>
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Fecha</label>
+                            <input id="seg-fecha" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none;">
+                        </div>
+                    </div>
+
+                    <!-- Presión, DX y botón CONSULTAR -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; align-items:flex-end;">
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Presión</label>
+                            <input id="seg-presion" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none;">
+                        </div>
+                        <div>
+                            <label
+                                style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">DX</label>
+                            <input id="seg-dx" type="text" readonly placeholder="—"
+                                style="width:100%; padding:12px 15px; border:1px solid #d5dae8; border-radius:8px; font-size:13px; background:#fff; outline:none;">
+                        </div>
+                        <div>
+                            <button onclick="consultarResultado()"
+                                style="width:100%; padding:14px; background:#28a745; color:white; border:none; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; letter-spacing:1px; transition:.2s; height:48px;">
+                                CONSULTAR
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje de error/info -->
+                    <div id="seg-msg"
+                        style="margin-top:16px; font-size:13px; font-weight:600; color:#e53935; display:none;"></div>
+                </div>
+
+                <!-- Panel derecho: resultados -->
+                <div
+                    style="width:260px; background:#f8faff; border-radius:14px; padding:24px; border:1px solid #edf1fa; display:flex; flex-direction:column; gap:0;">
+                    <div
+                        style="font-size:13px; font-weight:700; color:#2b1b54; text-transform:uppercase; letter-spacing:1px; margin-bottom:20px; border-bottom:2px solid #edf1fa; padding-bottom:12px;">
+                        <i class="fas fa-clipboard-check"></i> Resultados
+                    </div>
+
+                    <label
+                        style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Estado</label>
+                    <div id="res-estado" style="padding:12px 16px; border-radius:8px; font-weight:800; font-size:16px; text-align:center;
+                               background:#edf1fa; color:#7b839e; margin-bottom:18px; letter-spacing:1px;">
+                        —
+                    </div>
+
+                    <label
+                        style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">N°
+                        Semana</label>
+                    <div id="res-semana" style="padding:12px 16px; border-radius:8px; font-weight:700; font-size:20px; text-align:center;
+                               background:#edf1fa; color:#2b1b54; margin-bottom:18px;">
+                        —
+                    </div>
+
+                    <label
+                        style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Mes</label>
+                    <div id="res-mes" style="padding:12px 16px; border-radius:8px; font-weight:700; font-size:16px; text-align:center;
+                               background:#edf1fa; color:#2b1b54; margin-bottom:24px;">
+                        —
+                    </div>
+
+                    <div id="res-faltantes" style="font-size:12px; color:#e53935; display:none;">
+                        <strong>Campos faltantes:</strong><br>
+                        <span id="res-faltantes-lista"></span>
+                    </div>
+
+                    <div style="margin-top:auto; padding-top:20px; border-top:1px solid #edf1fa;">
+                        <button onclick="limpiarSeguimiento()"
+                            style="width:100%; padding:10px; background:#ffeaea; color:#e53935; border:none; border-radius:8px; font-weight:700; cursor:pointer;">
+                            LIMPIAR
+                        </button>
+                    </div>
+
+                </div>
+
+            </div><!-- /flex row -->
+        </div>
+
+
+        <div class="card section-container" id="section-reportes"
+            style="{{ 'display:block;' if seccion == 'reportes' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-chart-pie"></i> Reportes Estadísticos</h3>
+            <p style="color: #6c6a85;">Generación de reportes y estadísticas operativas.</p>
+        </div>
+
+    </main>
+
+    <!-- SPA Logic Controller -->
+    <script>
+        function showSection(event, sectionId) {
+            event.preventDefault();
+            document.querySelectorAll('.section-container').forEach(function (el) {
+                el.style.display = 'none';
+            });
+            document.getElementById('section-' + sectionId).style.display = 'block';
+            document.querySelectorAll('.nav-link').forEach(function (el) {
+                el.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            window.history.replaceState(null, null, '/panel-de-control/' + sectionId);
+        }
+
+        // ── SEGUIMIENTO ──────────────────────────────────────────
+        let _atencionActual = 1;
+        let _datosActuales = null;
+
+        function seleccionarAtencion(n) {
+            _atencionActual = n;
+            const b1 = document.getElementById('btn-aten1');
+            const b2 = document.getElementById('btn-aten2');
+            if (n === 1) {
+                b1.style.background = '#5532d8'; b1.style.color = 'white';
+                b2.style.background = 'white'; b2.style.color = '#5532d8';
+            } else {
+                b2.style.background = '#5532d8'; b2.style.color = 'white';
+                b1.style.background = 'white'; b1.style.color = '#5532d8';
+            }
+            // Si ya había datos buscados, recargar con la nueva atención
+            const dni = document.getElementById('seg-dni-input').value.trim();
+            if (dni) buscarPaciente();
+        }
+
+        function buscarPaciente() {
+            const dni = document.getElementById('seg-dni-input').value.trim();
+            if (!dni) { mostrarMsg('Ingresa un DNI para buscar.'); return; }
+            ocultarMsg();
+            limpiarCampos();
+            fetch(`/api/seguimiento/buscar?dni=${encodeURIComponent(dni)}&atencion=${_atencionActual}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) { mostrarMsg(data.error); return; }
+                    _datosActuales = data;
+                    document.getElementById('seg-nombre').value = data.nombre_completo || '';
+                    document.getElementById('seg-dni').value = data.dni || '';
+                    document.getElementById('seg-lote').value = data.lote || '';
+                    document.getElementById('seg-fua').value = data.fua || '';
+                    document.getElementById('seg-fecha').value = data.fecha || '';
+                    document.getElementById('seg-presion').value = data.presion || '';
+                    document.getElementById('seg-dx').value = data.dx || '';
+                })
+                .catch(() => mostrarMsg('Error de conexión con el servidor.'));
+        }
+
+        function consultarResultado() {
+            if (!_datosActuales) { mostrarMsg('Primero busca un paciente por DNI.'); return; }
+            const d = _datosActuales;
+
+            // Estado
+            const elEstado = document.getElementById('res-estado');
+            if (d.cumple === 'CUMPLE') {
+                elEstado.textContent = ' CUMPLE';
+                elEstado.style.background = '#e8f5e9';
+                elEstado.style.color = '#2e7d32';
+            } else {
+                elEstado.textContent = ' NO CUMPLE';
+                elEstado.style.background = '#fdecea';
+                elEstado.style.color = '#c62828';
+            }
+
+            // Semana y Mes
+            document.getElementById('res-semana').textContent = d.num_semana || '—';
+            document.getElementById('res-mes').textContent = d.mes || '—';
+
+            // Campos faltantes
+            const elFalt = document.getElementById('res-faltantes');
+            if (d.faltantes && d.faltantes.length > 0) {
+                document.getElementById('res-faltantes-lista').textContent = d.faltantes.join(', ');
+                elFalt.style.display = 'block';
+            } else {
+                elFalt.style.display = 'none';
+            }
+        }
+
+        function limpiarSeguimiento() {
+            limpiarCampos();
+            _datosActuales = null;
+            document.getElementById('seg-dni-input').value = '';
+            document.getElementById('res-estado').textContent = '—';
+            document.getElementById('res-estado').style.background = '#edf1fa';
+            document.getElementById('res-estado').style.color = '#7b839e';
+            document.getElementById('res-semana').textContent = '—';
+            document.getElementById('res-mes').textContent = '—';
+            document.getElementById('res-faltantes').style.display = 'none';
+            ocultarMsg();
+        }
+
+        function limpiarCampos() {
+            ['seg-nombre', 'seg-dni', 'seg-lote', 'seg-fua', 'seg-fecha', 'seg-presion', 'seg-dx']
+                .forEach(id => { document.getElementById(id).value = ''; });
+        }
+
+        function mostrarMsg(txt) {
+            const el = document.getElementById('seg-msg');
+            el.textContent = '⚠ ' + txt;
+            el.style.display = 'block';
+        }
+        function ocultarMsg() {
+            document.getElementById('seg-msg').style.display = 'none';
+        }
+
+        // Enter en el campo DNI dispara la búsqueda
+        document.addEventListener('DOMContentLoaded', function () {
+            const inp = document.getElementById('seg-dni-input');
+            if (inp) inp.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') buscarPaciente();
+            });
+        });
+
+    </script>
+</body>
+
+</html>

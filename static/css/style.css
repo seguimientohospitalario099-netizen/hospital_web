@@ -1,0 +1,259 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #314639; /* Dark green matching reference */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Faded background circles */
+.bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.circle-1 { width: 300px; height: 300px; top: -50px; left: 15%; }
+.circle-2 { width: 450px; height: 450px; bottom: -100px; right: 8%; }
+.circle-3 { width: 120px; height: 120px; top: 25%; right: 5%; }
+
+.login-container {
+    width: 950px;
+    height: 600px;
+    background-color: #3b5545; /* Contenedor sutilmente diferente al body */
+    border-radius: 30px;
+    display: flex;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+    overflow: hidden; /* Evita que el borde curvo interior se salga del radio global */
+}
+
+/* El panel curvo izquierdo recreando la estética fluida de la imagen */
+.left-panel {
+    width: 55%;
+    background-color: #ffffff;
+    /* Un border-radius muy pronunciado genera esa curva suave hacia adentro simulando el vector original */
+    border-radius: 0 250px 250px 0; 
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px;
+    z-index: 5;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-icon {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-text {
+    line-height: 1;
+}
+
+.logo-title { font-size: 12px; color: #145da0; font-weight: 500; display: block;}
+.logo-subtitle { font-size: 15px; color: #145da0; font-weight: 700; display: block;}
+
+.illustration-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 40px 20px 20px; /* Mas padding a la derecha para empujar por la curva */
+}
+
+.main-img {
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+}
+
+.footer-left {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.5;
+}
+
+/* Panel Derecho (Zona del Login) */
+.right-panel {
+    width: 45%;
+    padding: 60px 50px 60px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+
+.login-box {
+    width: 100%;
+    color: #ffffff;
+}
+
+.login-box h1 {
+    font-size: 32px;
+    font-weight: 500;
+    margin-bottom: 25px;
+    letter-spacing: 0.5px;
+}
+
+.flash-msg {
+    background-color: rgba(255, 100, 100, 0.15);
+    color: #ffcccc;
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 100, 100, 0.3);
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: #dde0df;
+    font-weight: 400;
+}
+
+.input-group input {
+    width: 100%;
+    background-color: #26382c; 
+    border: 2px solid transparent;
+    padding: 14px 20px;
+    border-radius: 25px; 
+    color: white;
+    font-size: 13px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-group input::placeholder {
+    color: #7b9181;
+}
+
+.input-group input:focus {
+    border: 2px solid #6d9c9a;
+    background-color: #1e2c22;
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper i {
+    position: absolute;
+    right: 15px;
+    cursor: pointer;
+    color: #7b9181;
+    font-size: 15px;
+    transition: 0.3s;
+}
+
+.password-wrapper i:hover {
+    color: #ffffff;
+}
+
+.forgot-pwd {
+    text-align: right;
+    margin-bottom: 30px;
+    margin-top: -10px;
+}
+
+.forgot-pwd a {
+    color: #88aa9d;
+    text-decoration: none;
+    font-size: 11px;
+    border-bottom: 1px solid transparent;
+    transition: 0.3s;
+}
+
+.forgot-pwd a:hover {
+    color: white;
+    border-bottom: 1px solid white;
+}
+
+.login-btn {
+    width: 100%;
+    background-color: #7eacaa;
+    color: #ffffff;
+    border: none;
+    padding: 15px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.login-btn:hover {
+    background-color: #92c5c3;
+    transform: translateY(-1px);
+}
+
+.register-link {
+    text-align: center;
+    font-size: 12px;
+    color: #a0b2a8;
+    line-height: 1.6;
+    margin-bottom: 35px;
+}
+
+.register-link a {
+    color: #88aa9d;
+    text-decoration: none;
+    border-bottom: 1px solid #88aa9d;
+    transition: 0.3s;
+}
+
+.register-link a:hover {
+    color: white;
+    border-color: white;
+}
+
+.footer-right {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #879b90;
+    align-items: flex-end;
+}
+
+.footer-right a {
+    color: #879b90;
+    text-decoration: underline;
+    transition: 0.3s;
+}
+
+.footer-right a:hover {
+    color: white;
+}
+
+.contact {
+    text-align: right;
+    line-height: 1.4;
+}

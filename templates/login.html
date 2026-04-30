@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Hospital San Jose</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Elementos flotantes de fondo -->
+    <div class="bg-circle circle-1"></div>
+    <div class="bg-circle circle-2"></div>
+    <div class="bg-circle circle-3"></div>
+
+    <div class="login-container">
+        <!-- Panel Izquierdo / Curvo Blanco -->
+        <div class="left-panel">
+            <div class="logo-area">
+                <img src="{{ url_for('static', filename='images/LOGO1.jpg') }}" class="logo-icon" alt="Logo">
+                <div class="logo-text">
+                    <span class="logo-title">HOSPITAL</span>
+                    <span class="logo-subtitle">SAN JOSÉ</span>
+                </div>
+            </div>
+
+            <div class="illustration-area">
+                <!-- Mostramos tu ilustración existente -->
+                <img src="{{ url_for('static', filename='images/new imagen.jpg') }}" class="main-img"
+                    alt="Ilustración Principal">
+            </div>
+
+            <div class="footer-left">
+                © 2026 Hospital San José de Chincha<br>
+                Powered by System
+            </div>
+        </div>
+
+        <!-- Panel Derecho / Verde Oscuro Formulario -->
+        <div class="right-panel">
+            <div class="login-box">
+                <h1>Login</h1>
+
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                {% for message in messages %}
+                <p class="flash-msg">{{ message }}</p>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form action="/login" method="POST">
+                    <div class="input-group">
+                        <label for="username">Usuario</label>
+                        <input type="text" id="username" name="username" placeholder="Ingresa tu Usuario" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Contraseña</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Ingresa tu Constraseña"
+                                style="padding-right: 45px;" required>
+                            <i class="fas fa-eye" id="togglePassword"></i>
+                        </div>
+                    </div>
+
+                    <div class="forgot-pwd">
+                        <a href="#">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="login-btn">Iniciar Sesión</button>
+
+                    <div class="register-link">
+                        Don't have an account?<br>
+                        <a href="#">Register Now</a>
+                    </div>
+                </form>
+
+                <div class="footer-right">
+                    <div class="terms">
+                        <a href="#">Terms and Services</a>
+                    </div>
+                    <div class="contact">
+                        Have a problem? Contact us at<br>
+                        <a href="#">soporte@sanjose.edu</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            // Alternar tipo password / text
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+
+            // Alternar ícono
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
+</body>
+
+</html>
