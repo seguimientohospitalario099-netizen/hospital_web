@@ -1,9 +1,9 @@
 import os
-import pandas as pd
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from dotenv import load_dotenv
 from supabase import create_client, Client
+
 
 load_dotenv()
 
