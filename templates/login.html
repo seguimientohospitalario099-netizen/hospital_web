@@ -150,7 +150,7 @@
 
         .input-group input {
             width: 100%;
-            padding: 13px 14px 13px 40px;
+            padding: 13px 46px 13px 40px;  /* derecha = espacio para el ojo */
             background: rgba(255,255,255,0.12);
             border: 1px solid rgba(255,255,255,0.25);
             border-radius: 10px;
@@ -172,6 +172,7 @@
         .eye-icon {
             position: absolute;
             right: 14px;
+            left: auto;          /* cancela el left:14px heredado de .input-wrapper i */
             top: 50%;
             transform: translateY(-50%);
             color: rgba(255,255,255,0.5);
@@ -179,8 +180,18 @@
             cursor: pointer;
             pointer-events: all !important;
             transition: color .2s;
+            z-index: 2;
         }
         .eye-icon:hover { color: #fff; }
+
+        /* Ocultar el botón nativo del navegador (Edge/Chrome) que
+           mostraba/ocultaba la contraseña al hacer clic en el campo */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear,
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+            display: none !important;
+        }
+
 
         /* ── BOTÓN ── */
         .login-btn {

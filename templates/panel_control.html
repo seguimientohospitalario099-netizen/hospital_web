@@ -628,27 +628,8 @@
 
         <div class="card section-container" id="section-ingreso-pacientes"
             style="{{ 'display:block;' if seccion == 'ingreso-pacientes' else 'display:none;' }}">
-            <h3 class="card-title"><i class="fas fa-file-excel"></i> Carga Masiva de Pacientes (Excel)</h3>
-            <p style="color: #6c6a85;">Sube tu Excel oficial para inyectar automáticamente todas las filas de pacientes
-                en la base de datos nacional del hospital.</p>
-
-            <div
-                style="background: #f4fbf7; border: 1.5px dashed #28a745; padding: 25px; border-radius: 12px; margin-top: 25px; margin-bottom: 35px;">
-                <form action="{{ url_for('upload_pacientes') }}" method="POST" enctype="multipart/form-data"
-                    class="form-grid"
-                    style="margin-bottom:0; background: transparent; border: none; padding: 0; align-items: center;">
-                    <div style="grid-column: span 2;">
-                        <label style="color:#28a745;"><i class="fas fa-paperclip"></i> Adjuntar Archivo de Registros
-                            Médicos</label>
-                        <input type="file" name="file" accept=".xlsx, .xls, .csv" required
-                            style="border: 1px solid #c3e6cb; background: white;">
-                    </div>
-                    <div>
-                        <button type="submit" class="btn-primary" style="background:#28a745; width:100%;"><i
-                                class="fas fa-cloud-upload-alt"></i> Procesar y Guardar</button>
-                    </div>
-                </form>
-            </div>
+            <h3 class="card-title"><i class="fas fa-user-plus"></i> Datos de Pacientes</h3>
+            <p style="color: #6c6a85;">Registro de pacientes ingresados al sistema.</p>
 
             <div class="table-responsive">
                 <table>
@@ -683,10 +664,9 @@
                         {% else %}
                         <tr>
                             <td colspan="6" style="text-align:center; padding: 40px; color: #a0a5ba;">
-                                <i class="fas fa-file-medical-alt"
+                                <i class="fas fa-user-friends"
                                     style="font-size:30px; margin-bottom:15px; opacity:0.5;"></i><br>
-                                La base de datos de pacientes está vacía.<br>Por favor sube un excel para empezar a
-                                registrarlos.
+                                No hay pacientes registrados aun.
                             </td>
                         </tr>
                         {% endif %}
