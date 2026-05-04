@@ -138,7 +138,8 @@
             position: relative;
         }
 
-        .input-wrapper i {
+        /* Icono izquierdo (solo campo usuario) */
+        .input-wrapper .icon-left {
             position: absolute;
             left: 14px;
             top: 50%;
@@ -146,11 +147,23 @@
             color: rgba(255,255,255,0.5);
             font-size: 14px;
             pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Input usuario: padding izquierdo para el icono */
+        #username {
+            padding-left: 40px;
+        }
+
+        /* Input contraseña: sin icono izquierdo, espacio derecho para el ojo */
+        #password {
+            padding-left: 16px;
+            padding-right: 48px;
         }
 
         .input-group input {
             width: 100%;
-            padding: 13px 46px 13px 40px;  /* derecha = espacio para el ojo */
+            padding: 13px 16px;
             background: rgba(255,255,255,0.12);
             border: 1px solid rgba(255,255,255,0.25);
             border-radius: 10px;
@@ -168,27 +181,28 @@
             background: rgba(255,255,255,0.18);
         }
 
-        /* ícono ojo contraseña */
-        .eye-icon {
+        /* Boton ojo — completamente independiente, sin herencia de .input-wrapper i */
+        .btn-eye {
             position: absolute;
-            right: 14px;
-            left: auto;          /* cancela el left:14px heredado de .input-wrapper i */
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: rgba(255,255,255,0.5);
-            font-size: 15px;
+            background: none;
+            border: none;
+            padding: 4px 6px;
             cursor: pointer;
-            pointer-events: all !important;
+            color: rgba(255,255,255,0.55);
+            font-size: 15px;
+            line-height: 1;
+            z-index: 3;
             transition: color .2s;
-            z-index: 2;
         }
-        .eye-icon:hover { color: #fff; }
+        .btn-eye:hover { color: #ffffff; }
+        .btn-eye:focus { outline: none; }
 
-        /* Ocultar el botón nativo del navegador (Edge/Chrome) que
-           mostraba/ocultaba la contraseña al hacer clic en el campo */
+        /* Ocultar reveal nativo del navegador */
         input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear,
-        input[type="password"]::-webkit-credentials-auto-fill-button {
+        input[type="password"]::-ms-clear {
             display: none !important;
         }
 
@@ -253,17 +267,18 @@
             <div class="input-group">
                 <label for="username">Usuario</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
+                    <i class="fas fa-user icon-left"></i>
+                    <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required autocomplete="username">
                 </div>
             </div>
 
             <div class="input-group">
                 <label for="password">Contraseña</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
-                    <i class="fas fa-eye eye-icon" id="togglePassword"></i>
+                    <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
+                    <button type="button" class="btn-eye" id="togglePassword" tabindex="-1" aria-label="Mostrar contraseña">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
             </div>
 
@@ -278,11 +293,16 @@
     </div>
 
     <script>
-        document.getElementById('togglePassword').addEventListener('click', function () {
-            const pwd = document.getElementById('password');
-            const isPassword = pwd.getAttribute('type') === 'password';
-            pwd.setAttribute('type', isPassword ? 'text' : 'password');
-            this.classList.toggle('fa-eye-slash');
+        var toggleBtn = document.getElementById('togglePassword');
+        var pwdInput  = document.getElementById('password');
+        var eyeIcon   = toggleBtn.querySelector('i');
+
+        toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var isHidden = pwdInput.getAttribute('type') === 'password';
+            pwdInput.setAttribute('type', isHidden ? 'text' : 'password');
+            eyeIcon.classList.toggle('fa-eye',      !isHidden);
+            eyeIcon.classList.toggle('fa-eye-slash', isHidden);
         });
     </script>
 
