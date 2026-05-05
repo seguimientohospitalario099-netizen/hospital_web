@@ -449,6 +449,78 @@
         .edit-form-dropdown select:focus {
             border-color: #5532d8;
         }
+
+        /* ── ESTILOS FORMULARIO INGRESO PACIENTE ── */
+        .form-paciente-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px 20px;
+            margin-top: 30px;
+        }
+
+        .form-paciente-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-paciente-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #000;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .form-paciente-group input,
+        .form-paciente-group select {
+            padding: 12px 15px;
+            border: 1.5px solid #284b8c;
+            border-radius: 2px;
+            font-size: 14px;
+            color: #2b1b54;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+        
+        .form-paciente-group input:focus,
+        .form-paciente-group select:focus {
+            border-color: #5532d8;
+        }
+
+        .btn-green {
+            background-color: #00b85c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+
+        .btn-green:hover {
+            background-color: #00964b;
+        }
+
+        .btn-dark {
+            background-color: #284b8c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+
+        .btn-dark:hover {
+            background-color: #1a3260;
+        }
     </style>
 </head>
 
@@ -682,9 +754,72 @@
 
         <!-- Nueva sección vacía: Ingreso Paciente -->
         <div class="card section-container" id="section-ingreso-paciente"
-            style="{{ 'display:block;' if seccion == 'ingreso-paciente' else 'display:none;' }}">
-            <h3 class="card-title"><i class="fas fa-user-plus"></i> Ingreso Paciente</h3>
-            <p style="color: #6c6a85;">Formulario de ingreso de pacientes (próximamente).</p>
+            style="{{ 'display:block;' if seccion == 'ingreso-paciente' else 'display:none;' }}; padding-top: 40px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 class="card-title" style="margin-bottom: 5px; font-weight: 700; color: #000;">INGRESO DE PACIENTES</h3>
+                </div>
+                <div style="width: 250px;">
+                    <label style="font-size: 12px; font-weight: 500; color: #000; text-transform: uppercase; display: block; margin-bottom: 6px;">Buscar por DNI</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="form-buscar-dni" maxlength="8" style="flex:1; padding:12px 15px; border:1.5px solid #284b8c; border-radius:2px; font-size:14px; outline:none; background:#fff;">
+                        <button onclick="buscarPacienteForm()" style="background:#284b8c; color:white; border:none; border-radius:2px; padding:0 15px; cursor:pointer;"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <form id="form-ingreso-paciente">
+                <input type="hidden" id="form-id-paciente">
+                
+                <div class="form-paciente-grid">
+                    <div class="form-paciente-group">
+                        <label>NOMBRE</label>
+                        <input type="text" id="form-nombre" required>
+                    </div>
+                    <div class="form-paciente-group">
+                        <label>APELLIDO</label>
+                        <input type="text" id="form-apellido" required>
+                    </div>
+                    <div class="form-paciente-group">
+                        <label>DNI</label>
+                        <input type="text" id="form-dni" maxlength="8" required>
+                    </div>
+                    
+                    <div class="form-paciente-group">
+                        <label>ESTABLECIMIENTO</label>
+                        <select id="form-establecimiento">
+                            <option value="">Seleccione</option>
+                        </select>
+                    </div>
+                    <div class="form-paciente-group">
+                        <label>FECHA NACIMIENTO</label>
+                        <input type="date" id="form-fecha-nac" required>
+                    </div>
+                    <div class="form-paciente-group">
+                        <label>CELULAR</label>
+                        <input type="text" id="form-celular" maxlength="9" pattern="\d{9}">
+                    </div>
+
+                    <div class="form-paciente-group">
+                        <label>GENERO</label>
+                        <select id="form-genero" required>
+                            <option value="">Seleccione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-paciente-group">
+                        <label>DIRECCION</label>
+                        <input type="text" id="form-direccion">
+                    </div>
+                    
+                    <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn-dark">Continuar</button>
+                        <button type="button" class="btn-green">INGRESAR</button>
+                    </div>
+                </div>
+            </form>
         </div>
 
         <div class="card section-container" id="section-seguimiento-pacientes"
@@ -962,11 +1097,92 @@
 
         // Enter en el campo DNI dispara la búsqueda
         document.addEventListener('DOMContentLoaded', function () {
+            cargarEstablecimientos();
+            
             const inp = document.getElementById('seg-dni-input');
             if (inp) inp.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') buscarPaciente();
             });
+
+            const inpForm = document.getElementById('form-buscar-dni');
+            if (inpForm) inpForm.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') buscarPacienteForm();
+            });
         });
+
+        /* --- LOGICA INGRESO PACIENTE --- */
+        async function cargarEstablecimientos() {
+            try {
+                const res = await fetch('/api/establecimientos');
+                if (res.ok) {
+                    const data = await res.json();
+                    const select = document.getElementById('form-establecimiento');
+                    data.forEach(est => {
+                        const option = document.createElement('option');
+                        option.value = est.IdEstablecimiento;
+                        option.textContent = est.NombreEstablecimiento;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                console.error("Error cargando establecimientos", err);
+            }
+        }
+
+        async function buscarPacienteForm() {
+            const dni = document.getElementById('form-buscar-dni').value.trim();
+            if (!dni || dni.length < 8) {
+                alert("Por favor ingrese un DNI válido de 8 dígitos.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/paciente/buscar-dni?dni=${dni}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert(data.mensaje || data.error || "Paciente no encontrado en la base de datos.");
+                    // Limpiar campos y dejar el DNI para crear nuevo
+                    document.getElementById('form-id-paciente').value = '';
+                    document.getElementById('form-nombre').value = '';
+                    document.getElementById('form-apellido').value = '';
+                    document.getElementById('form-dni').value = dni; 
+                    document.getElementById('form-establecimiento').value = '';
+                    document.getElementById('form-fecha-nac').value = '';
+                    document.getElementById('form-celular').value = '';
+                    document.getElementById('form-genero').value = '';
+                    document.getElementById('form-direccion').value = '';
+                    return;
+                }
+
+                // Autocompletar con los datos encontrados
+                document.getElementById('form-id-paciente').value = data.id_paciente || '';
+                document.getElementById('form-nombre').value = data.nombres || '';
+                document.getElementById('form-apellido').value = data.apellidos || '';
+                document.getElementById('form-dni').value = data.dni || dni;
+                
+                if (data.establecimiento && data.establecimiento.IdEstablecimiento) {
+                    document.getElementById('form-establecimiento').value = data.establecimiento.IdEstablecimiento;
+                } else {
+                    document.getElementById('form-establecimiento').value = '';
+                }
+
+                document.getElementById('form-fecha-nac').value = data.fec_nacimiento ? data.fec_nacimiento.substring(0, 10) : '';
+                document.getElementById('form-celular').value = data.celular || '';
+                
+                let gen = (data.genero || '').toLowerCase();
+                let genOption = '';
+                if (gen.includes('masculino') || gen === 'm') genOption = 'Masculino';
+                else if (gen.includes('femenino') || gen === 'f') genOption = 'Femenino';
+                document.getElementById('form-genero').value = genOption;
+                
+                document.getElementById('form-direccion').value = data.direccion || '';
+
+            } catch (err) {
+                alert("Error de conexión al buscar paciente.");
+                console.error(err);
+            }
+        }
 
     </script>
 </body>

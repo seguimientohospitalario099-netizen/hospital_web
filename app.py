@@ -542,5 +542,117 @@ def seguimiento_buscar():
         return jsonify({'error': str(e)}), 500
 
 
+
+# ─────────────────────────────────────────────────────────────
+# API: INGRESO PACIENTE
+# ─────────────────────────────────────────────────────────────
+
+@app.route('/api/establecimientos')
+def api_establecimientos():
+    """Retorna la lista de establecimientos para el combo box."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        resp = supabase.table('ESTABLECIMIENTO_SALUD')\
+            .select('"IdEstablecimiento","NombreEstablecimiento","CodigoRenipres"')\
+            .order('"NombreEstablecimiento"').execute()
+        return jsonify(resp.data or [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/paciente/buscar-dni')
+def api_buscar_paciente_dni():
+    """Busca un paciente por DNI y devuelve sus datos personales + establecimiento."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    dni = request.args.get('dni', '').strip()
+    if not dni:
+        return jsonify({'error': 'DNI requerido'}), 400
+
+    try:
+        r = supabase.table('Paciente')\
+            .select('"IdPaciente","Nombres","Apellidos","DNI","fecNacimiento","Genero","Direccion","Celular"')\
+            .eq('"DNI"', dni).limit(1).execute()
+
+        if not r.data:
+            return jsonify({'encontrado': False,
+                            'mensaje': f'No se encontró ningún paciente con DNI {dni}'}), 404
+
+        p = r.data[0]
+        id_pac = p['IdPaciente']
+
+        # Buscar el establecimiento asociado (primera atención del paciente)
+        r_est = supabase.table('ATENCIONES')\
+            .select('"IdEstablecimiento",ESTABLECIMIENTO_SALUD("IdEstablecimiento","NombreEstablecimiento","CodigoRenipres")')\
+            .eq('"IdPaciente"', id_pac)\
+            .not_.is_('"IdEstablecimiento"', 'null')\
+            .limit(1).execute()
+
+        establecimiento = {}
+        if r_est.data and r_est.data[0].get('ESTABLECIMIENTO_SALUD'):
+            establecimiento = r_est.data[0]['ESTABLECIMIENTO_SALUD']
+
+        return jsonify({
+            'encontrado': True,
+            'id_paciente':   id_pac,
+            'nombres':       p.get('Nombres')       or '',
+            'apellidos':     p.get('Apellidos')      or '',
+            'dni':           p.get('DNI')            or '',
+            'fec_nacimiento':p.get('fecNacimiento')  or '',
+            'genero':        p.get('Genero')         or '',
+            'direccion':     p.get('Direccion')      or '',
+            'celular':       p.get('Celular')        or '',
+            'establecimiento': establecimiento,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/paciente/guardar', methods=['POST'])
+def api_guardar_paciente():
+    """Crea o actualiza los datos personales de un paciente."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    datos = request.get_json(force=True) or {}
+    dni        = (datos.get('dni') or '').strip()
+    nombres    = (datos.get('nombres') or '').strip()
+    apellidos  = (datos.get('apellidos') or '').strip()
+    fec_naci   = (datos.get('fec_nacimiento') or '').strip()
+    genero     = (datos.get('genero') or '').strip()
+    direccion  = (datos.get('direccion') or '').strip()
+    celular    = (datos.get('celular') or '').strip()
+    id_est     = datos.get('id_establecimiento')   # puede ser None
+    id_pac     = datos.get('id_paciente')          # None si es paciente nuevo
+
+    if not dni and not nombres:
+        return jsonify({'error': 'Se requiere al menos DNI o Nombre'}), 400
+
+    try:
+        payload = {}
+        if nombres:    payload['Nombres']       = nombres
+        if apellidos:  payload['Apellidos']     = apellidos
+        if dni:        payload['DNI']           = dni
+        if fec_naci:   payload['fecNacimiento'] = fec_naci
+        if genero:     payload['Genero']        = genero
+        if direccion:  payload['Direccion']     = direccion
+        if celular:    payload['Celular']       = celular
+
+        if id_pac:
+            # Actualizar paciente existente (solo los campos que vienen en el payload)
+            supabase.table('Paciente').update(payload).eq('"IdPaciente"', id_pac).execute()
+            nuevo_id = id_pac
+        else:
+            # Insertar nuevo paciente
+            ins = supabase.table('Paciente').insert(payload).execute()
+            nuevo_id = ins.data[0]['IdPaciente']
+
+        return jsonify({'ok': True, 'id_paciente': nuevo_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
