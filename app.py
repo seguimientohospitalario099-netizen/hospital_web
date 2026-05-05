@@ -583,17 +583,19 @@ def api_buscar_paciente_dni():
         p = r.data[0]
         id_pac = p['IdPaciente']
 
-        # Buscar el establecimiento asociado (primera atención del paciente)
+        # Buscar las atenciones del paciente para la "Primera Atención"
         r_est = supabase.table('ATENCIONES')\
             .select('"IdAtencion","IdEstablecimiento","Lote","NumFua","FechaAtencion","Seguro",ESTABLECIMIENTO_SALUD("IdEstablecimiento","NombreEstablecimiento","CodigoRenipres"),EVALUACIONES_CLINICAS("Dx","PresionA")')\
             .eq('"IdPaciente"', id_pac)\
             .order('"IdAtencion"')\
-            .limit(1).execute()
+            .execute()
 
         establecimiento = {}
         primera_atencion = {}
         if r_est.data:
-            at = r_est.data[0]
+            # Buscar la primera atención que tenga datos (Lote, Fecha o FUA)
+            at = next((x for x in r_est.data if x.get('Lote') or x.get('NumFua') or x.get('FechaAtencion')), r_est.data[0])
+            
             if at.get('ESTABLECIMIENTO_SALUD'):
                 establecimiento = at['ESTABLECIMIENTO_SALUD']
             
