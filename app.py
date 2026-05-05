@@ -585,14 +585,29 @@ def api_buscar_paciente_dni():
 
         # Buscar el establecimiento asociado (primera atención del paciente)
         r_est = supabase.table('ATENCIONES')\
-            .select('"IdEstablecimiento",ESTABLECIMIENTO_SALUD("IdEstablecimiento","NombreEstablecimiento","CodigoRenipres")')\
+            .select('"IdAtencion","IdEstablecimiento","Lote","NumFua","FechaAtencion","Seguro",ESTABLECIMIENTO_SALUD("IdEstablecimiento","NombreEstablecimiento","CodigoRenipres"),EVALUACIONES_CLINICAS("Dx","PresionA")')\
             .eq('"IdPaciente"', id_pac)\
-            .not_.is_('"IdEstablecimiento"', 'null')\
+            .order('"IdAtencion"')\
             .limit(1).execute()
 
         establecimiento = {}
-        if r_est.data and r_est.data[0].get('ESTABLECIMIENTO_SALUD'):
-            establecimiento = r_est.data[0]['ESTABLECIMIENTO_SALUD']
+        primera_atencion = {}
+        if r_est.data:
+            at = r_est.data[0]
+            if at.get('ESTABLECIMIENTO_SALUD'):
+                establecimiento = at['ESTABLECIMIENTO_SALUD']
+            
+            evs = at.get('EVALUACIONES_CLINICAS') or []
+            ev = evs[0] if evs else {}
+            
+            primera_atencion = {
+                'lote': at.get('Lote') or '',
+                'fua': at.get('NumFua') or '',
+                'fecha': at.get('FechaAtencion') or '',
+                'seguro': at.get('Seguro') or '',
+                'dx': ev.get('Dx') or '',
+                'presion': ev.get('PresionA') or ''
+            }
 
         return jsonify({
             'encontrado': True,
@@ -605,6 +620,7 @@ def api_buscar_paciente_dni():
             'direccion':     p.get('Direccion')      or '',
             'celular':       p.get('Celular')        or '',
             'establecimiento': establecimiento,
+            'primera_atencion': primera_atencion,
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

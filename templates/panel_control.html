@@ -815,11 +815,50 @@
                     </div>
                     
                     <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; gap: 10px; justify-content: flex-end;">
-                        <button type="button" class="btn-dark">Continuar</button>
-                        <button type="button" class="btn-green">INGRESAR</button>
+                        <button type="button" class="btn-dark" style="margin-top: auto;" onclick="mostrarPrimeraAtencion()">Continuar</button>
+                        <button type="button" class="btn-green" style="margin-top: auto;" onclick="guardarPacienteForm()">INGRESAR</button>
                     </div>
                 </div>
             </form>
+
+            <!-- Sección Primera Atención (oculta por defecto) -->
+            <div id="section-primera-atencion" style="display: none; margin-top: 50px; border-top: 1px solid #edf1fa; padding-top: 40px;">
+                <h3 class="card-title" style="margin-bottom: 20px; font-weight: 700; color: #000; text-transform: uppercase;">PRIMERA ATENCIÓN</h3>
+                <form id="form-primera-atencion">
+                    <div class="form-paciente-grid">
+                        <div class="form-paciente-group">
+                            <label>LOTE</label>
+                            <input type="text" id="form-lote" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>N° FUA</label>
+                            <input type="text" id="form-fua" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>FECHA DE ATENCIÓN</label>
+                            <input type="date" id="form-fecha-aten" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        
+                        <div class="form-paciente-group">
+                            <label>DX</label>
+                            <input type="text" id="form-dx" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>PRESION</label>
+                            <input type="text" id="form-presion" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>SEGURO</label>
+                            <input type="text" id="form-seguro" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        
+                        <!-- El botón REGISTRAR de la primera atención -->
+                        <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-end; grid-column: span 3;">
+                            <button type="button" class="btn-dark" style="margin-top: auto;">REGISTRAR</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <div class="card section-container" id="section-seguimiento-pacientes"
@@ -1152,6 +1191,15 @@
                     document.getElementById('form-celular').value = '';
                     document.getElementById('form-genero').value = '';
                     document.getElementById('form-direccion').value = '';
+                    
+                    // Limpiar también primera atención
+                    document.getElementById('form-lote').value = '';
+                    document.getElementById('form-fua').value = '';
+                    document.getElementById('form-fecha-aten').value = '';
+                    document.getElementById('form-dx').value = '';
+                    document.getElementById('form-presion').value = '';
+                    document.getElementById('form-seguro').value = '';
+                    
                     return;
                 }
 
@@ -1178,9 +1226,78 @@
                 
                 document.getElementById('form-direccion').value = data.direccion || '';
 
+                // Autocompletar Primera Atencion
+                if (data.primera_atencion) {
+                    document.getElementById('form-lote').value = data.primera_atencion.lote || '';
+                    document.getElementById('form-fua').value = data.primera_atencion.fua || '';
+                    document.getElementById('form-fecha-aten').value = data.primera_atencion.fecha ? data.primera_atencion.fecha.substring(0, 10) : '';
+                    document.getElementById('form-dx').value = data.primera_atencion.dx || '';
+                    document.getElementById('form-presion').value = data.primera_atencion.presion || '';
+                    document.getElementById('form-seguro').value = data.primera_atencion.seguro || '';
+                } else {
+                    document.getElementById('form-lote').value = '';
+                    document.getElementById('form-fua').value = '';
+                    document.getElementById('form-fecha-aten').value = '';
+                    document.getElementById('form-dx').value = '';
+                    document.getElementById('form-presion').value = '';
+                    document.getElementById('form-seguro').value = '';
+                }
+
             } catch (err) {
                 alert("Error de conexión al buscar paciente.");
                 console.error(err);
+            }
+        }
+
+        async function guardarPacienteForm() {
+            const dni = document.getElementById('form-dni').value.trim();
+            const nombres = document.getElementById('form-nombre').value.trim();
+            
+            if (!dni || !nombres) {
+                alert("El DNI y el Nombre son requeridos para ingresar al paciente.");
+                return;
+            }
+
+            const payload = {
+                id_paciente: document.getElementById('form-id-paciente').value || null,
+                dni: dni,
+                nombres: nombres,
+                apellidos: document.getElementById('form-apellido').value.trim(),
+                id_establecimiento: document.getElementById('form-establecimiento').value || null,
+                fec_nacimiento: document.getElementById('form-fecha-nac').value,
+                celular: document.getElementById('form-celular').value.trim(),
+                genero: document.getElementById('form-genero').value,
+                direccion: document.getElementById('form-direccion').value.trim()
+            };
+
+            try {
+                const res = await fetch('/api/paciente/guardar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (res.ok && data.ok) {
+                    alert("Datos personales del paciente guardados correctamente.");
+                    document.getElementById('form-id-paciente').value = data.id_paciente; 
+                } else {
+                    alert(data.error || "Error al guardar los datos del paciente.");
+                }
+            } catch (err) {
+                alert("Error de red al guardar los datos.");
+                console.error(err);
+            }
+        }
+
+        function mostrarPrimeraAtencion() {
+            document.getElementById('section-primera-atencion').style.display = 'block';
+            
+            // Autocompletar el Lote con los últimos 2 dígitos del año actual si está vacío
+            const inputLote = document.getElementById('form-lote');
+            if (!inputLote.value) {
+                const currentYear = new Date().getFullYear().toString().slice(-2);
+                inputLote.value = currentYear;
             }
         }
 
