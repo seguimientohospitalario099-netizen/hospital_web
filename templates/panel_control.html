@@ -468,9 +468,12 @@
             <a href="#" onclick="showSection(event, 'gestion-usuarios')"
                 class="nav-link {{ 'active' if seccion == 'gestion-usuarios' else '' }}"><i class="fas fa-users"></i>
                 Gestión Usuarios</a>
-            <a href="#" onclick="showSection(event, 'ingreso-pacientes')"
-                class="nav-link {{ 'active' if seccion == 'ingreso-pacientes' else '' }}"><i
-                    class="fas fa-user-plus"></i> Ingreso Pacientes</a>
+            <a href="#" onclick="showSection(event, 'pacientes-ingresados')"
+                class="nav-link {{ 'active' if seccion == 'pacientes-ingresados' else '' }}"><i
+                    class="fas fa-list-alt"></i> Pacientes Ingresados</a>
+            <a href="#" onclick="showSection(event, 'ingreso-paciente')"
+                class="nav-link {{ 'active' if seccion == 'ingreso-paciente' else '' }}"><i
+                    class="fas fa-user-plus"></i> Ingreso Paciente</a>
             <a href="#" onclick="showSection(event, 'seguimiento-pacientes')"
                 class="nav-link {{ 'active' if seccion == 'seguimiento-pacientes' else '' }}"><i
                     class="fas fa-notes-medical"></i> Seguimiento</a>
@@ -627,9 +630,9 @@
             </div>
         </div>
 
-        <div class="card section-container" id="section-ingreso-pacientes"
-            style="{{ 'display:block;' if seccion == 'ingreso-pacientes' else 'display:none;' }}">
-            <h3 class="card-title"><i class="fas fa-user-plus"></i> Datos de Pacientes</h3>
+        <div class="card section-container" id="section-pacientes-ingresados"
+            style="{{ 'display:block;' if seccion == 'pacientes-ingresados' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-list-alt"></i> Pacientes Ingresados</h3>
             <p style="color: #6c6a85;">Registro de pacientes ingresados al sistema.</p>
 
             <div class="table-responsive">
@@ -677,9 +680,17 @@
 
         </div>
 
+        <!-- Nueva sección vacía: Ingreso Paciente -->
+        <div class="card section-container" id="section-ingreso-paciente"
+            style="{{ 'display:block;' if seccion == 'ingreso-paciente' else 'display:none;' }}">
+            <h3 class="card-title"><i class="fas fa-user-plus"></i> Ingreso Paciente</h3>
+            <p style="color: #6c6a85;">Formulario de ingreso de pacientes (próximamente).</p>
+        </div>
+
         <div class="card section-container" id="section-seguimiento-pacientes"
             style="{{ 'display:block;' if seccion == 'seguimiento-pacientes' else 'display:none;' }}">
             <h3 class="card-title"><i class="fas fa-notes-medical"></i> Seguimiento de Pacientes</h3>
+
 
             <!-- Selector de atención -->
             <div style="display:flex; gap:12px; margin-bottom:28px;">
