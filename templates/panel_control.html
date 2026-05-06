@@ -522,6 +522,7 @@
             background-color: #1a3260;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -1029,7 +1030,107 @@
         <div class="card section-container" id="section-reportes"
             style="{{ 'display:block;' if seccion == 'reportes' else 'display:none;' }}">
             <h3 class="card-title"><i class="fas fa-chart-pie"></i> Reportes Estadísticos</h3>
-            <p style="color: #6c6a85;">Generación de reportes y estadísticas operativas.</p>
+            <p style="color: #6c6a85; margin-bottom: 30px;">Análisis estratégico de alto valor para la toma de decisiones del Hospital San José.</p>
+
+            <!-- KPIs rápidos -->
+            <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-bottom:36px;" id="reportes-kpis">
+                <div style="background:linear-gradient(135deg,#5532d8,#7c5ce4); border-radius:12px; padding:20px 24px; color:#fff;">
+                    <div style="font-size:12px; opacity:.8; text-transform:uppercase; letter-spacing:1px;">Total Pacientes</div>
+                    <div id="kpi-pacientes" style="font-size:36px; font-weight:800; margin-top:6px;">—</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#00b85c,#00d66c); border-radius:12px; padding:20px 24px; color:#fff;">
+                    <div style="font-size:12px; opacity:.8; text-transform:uppercase; letter-spacing:1px;">Total Atenciones</div>
+                    <div id="kpi-atenciones" style="font-size:36px; font-weight:800; margin-top:6px;">—</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#284b8c,#3a6bc4); border-radius:12px; padding:20px 24px; color:#fff;">
+                    <div style="font-size:12px; opacity:.8; text-transform:uppercase; letter-spacing:1px;">Evaluaciones Clínicas</div>
+                    <div id="kpi-evaluaciones" style="font-size:36px; font-weight:800; margin-top:6px;">—</div>
+                </div>
+            </div>
+
+            <!-- Fila 1: R1 Demografía + R2 Patologías -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+
+                <!-- R1: Distribución por Edad y Sexo -->
+                <div style="background:#fff; border:1px solid #edf1fa; border-radius:12px; padding:24px;">
+                    <div style="font-size:14px; font-weight:700; color:#2b1b54; margin-bottom:4px;">
+                        <i class="fas fa-users" style="color:#5532d8;"></i> R1 · Pirámide Poblacional
+                    </div>
+                    <div style="font-size:12px; color:#a0a5ba; margin-bottom:16px;">Distribución de pacientes por grupo de edad y sexo</div>
+                    <canvas id="chart-demografia" height="220"></canvas>
+                    <div style="font-size:11px; color:#7b839e; margin-top:12px; padding:10px; background:#f9faff; border-radius:8px;">
+                        <b>💡 Insight:</b> Si el 60% de pacientes tiene más de 60 años, el hospital debe reforzar programas geriátricos y de enfermedades crónicas.
+                    </div>
+                </div>
+
+                <!-- R2: Frecuencia de Patologías -->
+                <div style="background:#fff; border:1px solid #edf1fa; border-radius:12px; padding:24px;">
+                    <div style="font-size:14px; font-weight:700; color:#2b1b54; margin-bottom:4px;">
+                        <i class="fas fa-stethoscope" style="color:#e74c3c;"></i> R2 · Diagnósticos más Frecuentes
+                    </div>
+                    <div style="font-size:12px; color:#a0a5ba; margin-bottom:16px;">Top 8 códigos CIE-10 con mayor prevalencia</div>
+                    <canvas id="chart-patologias" height="220"></canvas>
+                    <div style="font-size:11px; color:#7b839e; margin-top:12px; padding:10px; background:#f9faff; border-radius:8px;">
+                        <b>💡 Insight:</b> Los diagnósticos dominantes revelan qué enfermedades crónicas requieren protocolos especializados.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila 2: R3 Riesgo Crónico + R4 Actividad por Establecimiento -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+
+                <!-- R3: Riesgo Crónico por Grupo Etario -->
+                <div style="background:#fff; border:1px solid #edf1fa; border-radius:12px; padding:24px;">
+                    <div style="font-size:14px; font-weight:700; color:#2b1b54; margin-bottom:4px;">
+                        <i class="fas fa-heartbeat" style="color:#e67e22;"></i> R3 · Riesgo Crónico por Grupo Etario
+                    </div>
+                    <div style="font-size:12px; color:#a0a5ba; margin-bottom:16px;">Concentración de HTA y DM2 según rango de edad</div>
+                    <canvas id="chart-riesgo" height="220"></canvas>
+                    <div style="font-size:11px; color:#7b839e; margin-top:12px; padding:10px; background:#f9faff; border-radius:8px;">
+                        <b>💡 Insight:</b> Si HTA/DM2 concentran en 60+, se puede priorizar tamizaje temprano en el grupo 45-59 como prevención.
+                    </div>
+                </div>
+
+                <!-- R4: Actividad por Establecimiento -->
+                <div style="background:#fff; border:1px solid #edf1fa; border-radius:12px; padding:24px;">
+                    <div style="font-size:14px; font-weight:700; color:#2b1b54; margin-bottom:4px;">
+                        <i class="fas fa-hospital" style="color:#284b8c;"></i> R4 · Carga Operativa por Establecimiento
+                    </div>
+                    <div style="font-size:12px; color:#a0a5ba; margin-bottom:16px;">Volumen de atenciones registradas por cada centro de salud</div>
+                    <canvas id="chart-establecimientos" height="220"></canvas>
+                    <div style="font-size:11px; color:#7b839e; margin-top:12px; padding:10px; background:#f9faff; border-radius:8px;">
+                        <b>💡 Insight:</b> Un establecimiento con carga desproporcionada puede indicar falta de descentralización o recursos insuficientes.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila 3: R5 Tendencia Temporal + R6 Calidad de Datos -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+
+                <!-- R5: Tendencia Temporal -->
+                <div style="background:#fff; border:1px solid #edf1fa; border-radius:12px; padding:24px;">
+                    <div style="font-size:14px; font-weight:700; color:#2b1b54; margin-bottom:4px;">
+                        <i class="fas fa-chart-line" style="color:#00b85c;"></i> R5 · Tendencia Mensual de Atenciones
+                    </div>
+                    <div style="font-size:12px; color:#a0a5ba; margin-bottom:16px;">Evolución del volumen de atenciones a lo largo del tiempo</div>
+                    <canvas id="chart-tendencia" height="220"></canvas>
+                    <div style="font-size:11px; color:#7b839e; margin-top:12px; padding:10px; background:#f9faff; border-radius:8px;">
+                        <b>💡 Insight:</b> Picos o valles inusuales en meses específicos pueden revelar campañas de salud, épocas epidémicas o problemas de registro.
+                    </div>
+                </div>
+
+                <!-- R6: Calidad de Datos -->
+                <div style="background:#fff; border:1px solid #edf1fa; border-radius:12px; padding:24px;">
+                    <div style="font-size:14px; font-weight:700; color:#2b1b54; margin-bottom:4px;">
+                        <i class="fas fa-check-double" style="color:#8e44ad;"></i> R6 · Índice de Calidad de Registro
+                    </div>
+                    <div style="font-size:12px; color:#a0a5ba; margin-bottom:16px;">Porcentaje de completitud de campos clínicos y demográficos</div>
+                    <canvas id="chart-calidad" height="220"></canvas>
+                    <div style="font-size:11px; color:#7b839e; margin-top:12px; padding:10px; background:#f9faff; border-radius:8px;">
+                        <b>💡 Insight:</b> Campos con menos del 70% de completitud son una señal de alerta para auditoría de registros y capacitación del personal.
+                    </div>
+                </div>
+            </div>
         </div>
 
     </main>
@@ -1050,6 +1151,9 @@
             
             if (sectionId === 'pacientes-ingresados') {
                 cargarUltimosPacientes();
+            }
+            if (sectionId === 'reportes') {
+                cargarReportes();
             }
         }
 
@@ -1155,6 +1259,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             cargarEstablecimientos();
             cargarUltimosPacientes();
+            
+            // Si la página carga directamente en la sección de reportes
+            const seccionActiva = '{{ seccion }}';
+            if (seccionActiva === 'reportes') {
+                cargarReportes();
+            }
             
             const inp = document.getElementById('seg-dni-input');
             if (inp) inp.addEventListener('keydown', function (e) {
@@ -1432,6 +1542,148 @@
                 });
             } catch (err) {
                 console.error("Error cargando últimos pacientes:", err);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           REPORTES ESTADÍSTICOS — Chart.js rendering
+        ═══════════════════════════════════════════════════════ */
+        const _chartInstances = {};
+
+        function _destroyChart(id) {
+            if (_chartInstances[id]) {
+                _chartInstances[id].destroy();
+                delete _chartInstances[id];
+            }
+        }
+
+        async function cargarReportes() {
+            try {
+                // KPIs
+                const [r1, r2, r3, r4, r5, r6] = await Promise.all([
+                    fetch('/api/reportes/demografia').then(r => r.json()),
+                    fetch('/api/reportes/patologias').then(r => r.json()),
+                    fetch('/api/reportes/riesgo-cronico').then(r => r.json()),
+                    fetch('/api/reportes/actividad-establecimientos').then(r => r.json()),
+                    fetch('/api/reportes/tendencia-temporal').then(r => r.json()),
+                    fetch('/api/reportes/calidad-datos').then(r => r.json()),
+                ]);
+
+                // ── KPIs ──
+                const totalPac = (r1.masculino || []).reduce((a, b) => a + b, 0) + (r1.femenino || []).reduce((a, b) => a + b, 0);
+                document.getElementById('kpi-pacientes').textContent = r6.total_pacientes ?? totalPac;
+                document.getElementById('kpi-evaluaciones').textContent = r6.total_evaluaciones ?? '—';
+                const totalAt = (r5.counts || []).reduce((a, b) => a + b, 0);
+                document.getElementById('kpi-atenciones').textContent = totalAt;
+
+                const cfg = { responsive: true, plugins: { legend: { labels: { font: { size: 11 } } } } };
+
+                // ── R1: Pirámide Poblacional ──
+                _destroyChart('demografia');
+                _chartInstances['demografia'] = new Chart(document.getElementById('chart-demografia'), {
+                    type: 'bar',
+                    data: {
+                        labels: r1.labels,
+                        datasets: [
+                            { label: 'Masculino', data: r1.masculino, backgroundColor: '#5532d8cc', borderRadius: 6 },
+                            { label: 'Femenino',  data: r1.femenino,  backgroundColor: '#e74c3ccc', borderRadius: 6 },
+                        ],
+                    },
+                    options: { ...cfg, scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { precision: 0 } } } },
+                });
+
+                // ── R2: Diagnósticos frecuentes ──
+                _destroyChart('patologias');
+                const coloresDx = ['#5532d8','#e74c3c','#e67e22','#00b85c','#284b8c','#8e44ad','#3a9bd5','#c0392b'];
+                _chartInstances['patologias'] = new Chart(document.getElementById('chart-patologias'), {
+                    type: 'bar',
+                    data: {
+                        labels: r2.dx_labels,
+                        datasets: [{
+                            label: 'Frecuencia',
+                            data: r2.dx_counts,
+                            backgroundColor: coloresDx.slice(0, (r2.dx_labels || []).length),
+                            borderRadius: 6,
+                        }],
+                    },
+                    options: { ...cfg, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
+                });
+
+                // ── R3: Riesgo Crónico por Grupo Etario ──
+                _destroyChart('riesgo');
+                _chartInstances['riesgo'] = new Chart(document.getElementById('chart-riesgo'), {
+                    type: 'bar',
+                    data: {
+                        labels: r3.labels,
+                        datasets: [
+                            { label: 'HTA', data: r3.hta, backgroundColor: '#e74c3ccc', borderRadius: 6 },
+                            { label: 'DM2', data: r3.dm2, backgroundColor: '#e67e22cc', borderRadius: 6 },
+                        ],
+                    },
+                    options: { ...cfg, scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { precision: 0 } } } },
+                });
+
+                // ── R4: Carga por Establecimiento ──
+                _destroyChart('establecimientos');
+                _chartInstances['establecimientos'] = new Chart(document.getElementById('chart-establecimientos'), {
+                    type: 'bar',
+                    data: {
+                        labels: r4.labels,
+                        datasets: [{
+                            label: 'Atenciones',
+                            data: r4.counts,
+                            backgroundColor: '#284b8ccc',
+                            borderRadius: 6,
+                        }],
+                    },
+                    options: { ...cfg, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
+                });
+
+                // ── R5: Tendencia Mensual ──
+                _destroyChart('tendencia');
+                _chartInstances['tendencia'] = new Chart(document.getElementById('chart-tendencia'), {
+                    type: 'line',
+                    data: {
+                        labels: r5.labels,
+                        datasets: [{
+                            label: 'Atenciones',
+                            data: r5.counts,
+                            borderColor: '#00b85c',
+                            backgroundColor: '#00b85c22',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#00b85c',
+                            pointRadius: 4,
+                        }],
+                    },
+                    options: { ...cfg, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+                });
+
+                // ── R6: Calidad de Datos ──
+                _destroyChart('calidad');
+                const coloresCalidad = r6.porcentajes.map(v => v >= 90 ? '#00b85c' : v >= 70 ? '#e67e22' : '#e74c3c');
+                _chartInstances['calidad'] = new Chart(document.getElementById('chart-calidad'), {
+                    type: 'bar',
+                    data: {
+                        labels: r6.labels,
+                        datasets: [{
+                            label: '% Completitud',
+                            data: r6.porcentajes,
+                            backgroundColor: coloresCalidad,
+                            borderRadius: 6,
+                        }],
+                    },
+                    options: {
+                        ...cfg,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: { x: { min: 0, max: 100, ticks: { callback: v => v + '%' } } },
+                    },
+                });
+
+            } catch (err) {
+                console.error('Error cargando reportes:', err);
             }
         }
 

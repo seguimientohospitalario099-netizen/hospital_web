@@ -647,6 +647,219 @@ def api_buscar_paciente_dni():
         return jsonify({'error': str(e)}), 500
 
 
+
+
+# ═══════════════════════════════════════════════════════
+#  API DE REPORTES ESTADÍSTICOS (6 reportes estratégicos)
+# ═══════════════════════════════════════════════════════
+
+@app.route('/api/reportes/demografia')
+def api_reporte_demografia():
+    """R1: Distribución demográfica por grupos de edad y sexo."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        from datetime import datetime
+        r = supabase.table('Paciente').select('"fecNacimiento","Genero"').execute()
+        hoy = datetime.now()
+        grupos = {
+            'M': {'0-17': 0, '18-29': 0, '30-44': 0, '45-59': 0, '60+': 0},
+            'F': {'0-17': 0, '18-29': 0, '30-44': 0, '45-59': 0, '60+': 0},
+        }
+        for p in r.data:
+            fec = p.get('fecNacimiento')
+            gen = (p.get('Genero') or '').lower()
+            sexo = 'F' if 'fem' in gen else 'M'
+            if not fec:
+                continue
+            try:
+                nac = datetime.strptime(fec[:10], '%Y-%m-%d')
+                edad = hoy.year - nac.year - ((hoy.month, hoy.day) < (nac.month, nac.day))
+                grupo = '60+' if edad >= 60 else ('45-59' if edad >= 45 else ('30-44' if edad >= 30 else ('18-29' if edad >= 18 else '0-17')))
+                grupos[sexo][grupo] += 1
+            except:
+                pass
+        labels = ['0-17', '18-29', '30-44', '45-59', '60+']
+        return jsonify({
+            'labels': labels,
+            'masculino': [grupos['M'][l] for l in labels],
+            'femenino': [grupos['F'][l] for l in labels],
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reportes/patologias')
+def api_reporte_patologias():
+    """R2: Frecuencia de diagnósticos (DX) más comunes."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        from collections import Counter
+        r = supabase.table('EVALUACIONES_CLINICAS').select('"Dx","Hta","Dm2"').execute()
+        dx_counter = Counter()
+        hta_si = 0
+        dm2_si = 0
+        for ev in r.data:
+            dx = (ev.get('Dx') or '').strip().upper()
+            if dx:
+                dx_counter[dx] += 1
+            if (ev.get('Hta') or '').upper() in ('SI', 'SÍ', 'S', '1', 'TRUE', 'YES'):
+                hta_si += 1
+            if (ev.get('Dm2') or '').upper() in ('SI', 'SÍ', 'S', '1', 'TRUE', 'YES'):
+                dm2_si += 1
+        top = dx_counter.most_common(8)
+        return jsonify({
+            'dx_labels': [t[0] for t in top],
+            'dx_counts': [t[1] for t in top],
+            'hta': hta_si,
+            'dm2': dm2_si,
+            'total': len(r.data),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reportes/riesgo-cronico')
+def api_reporte_riesgo():
+    """R3: Riesgo crónico (HTA/DM2) cruzado por grupo etario."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        from datetime import datetime
+        r = supabase.table('ATENCIONES')\
+            .select('"IdPaciente",Paciente("fecNacimiento"),EVALUACIONES_CLINICAS("Hta","Dm2")')\
+            .execute()
+        hoy = datetime.now()
+        grupos_hta = {'30-44': 0, '45-59': 0, '60+': 0}
+        grupos_dm2 = {'30-44': 0, '45-59': 0, '60+': 0}
+        for at in r.data:
+            pac = at.get('Paciente') or {}
+            fec = pac.get('fecNacimiento')
+            evs = at.get('EVALUACIONES_CLINICAS') or []
+            ev = evs[0] if evs else {}
+            hta = (ev.get('Hta') or '').upper() in ('SI', 'SÍ', 'S', '1')
+            dm2 = (ev.get('Dm2') or '').upper() in ('SI', 'SÍ', 'S', '1')
+            if not fec or (not hta and not dm2):
+                continue
+            try:
+                nac = datetime.strptime(fec[:10], '%Y-%m-%d')
+                edad = hoy.year - nac.year - ((hoy.month, hoy.day) < (nac.month, nac.day))
+                grupo = '60+' if edad >= 60 else ('45-59' if edad >= 45 else ('30-44' if edad >= 30 else None))
+                if grupo:
+                    if hta: grupos_hta[grupo] += 1
+                    if dm2: grupos_dm2[grupo] += 1
+            except:
+                pass
+        labels = ['30-44', '45-59', '60+']
+        return jsonify({
+            'labels': labels,
+            'hta': [grupos_hta[l] for l in labels],
+            'dm2': [grupos_dm2[l] for l in labels],
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reportes/actividad-establecimientos')
+def api_reporte_establecimientos():
+    """R4: Volumen de atenciones por establecimiento."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        from collections import Counter
+        r = supabase.table('ATENCIONES')\
+            .select('"IdEstablecimiento",ESTABLECIMIENTO_SALUD("NombreEstablecimiento")')\
+            .not_.is_('"IdEstablecimiento"', 'null')\
+            .execute()
+        conteo = Counter()
+        nombres = {}
+        for at in r.data:
+            id_est = at.get('IdEstablecimiento')
+            est = at.get('ESTABLECIMIENTO_SALUD') or {}
+            nombre = est.get('NombreEstablecimiento') or f'Est#{id_est}'
+            # Abbreviate long names
+            nombre_corto = nombre[:22] + '…' if len(nombre) > 22 else nombre
+            conteo[nombre_corto] += 1
+        top = conteo.most_common(10)
+        return jsonify({
+            'labels': [t[0] for t in top],
+            'counts': [t[1] for t in top],
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reportes/tendencia-temporal')
+def api_reporte_tendencia():
+    """R5: Tendencia mensual de atenciones registradas."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        from collections import Counter
+        r = supabase.table('ATENCIONES').select('"FechaAtencion"').not_.is_('"FechaAtencion"', 'null').execute()
+        meses = Counter()
+        for at in r.data:
+            fecha = at.get('FechaAtencion')
+            if fecha and len(fecha) >= 7:
+                meses[fecha[:7]] += 1
+        ordenado = sorted(meses.items())
+        labels_raw = [m[0] for m in ordenado]
+        MESES_ES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        labels_fmt = []
+        for m in labels_raw:
+            try:
+                y, mo = m.split('-')
+                labels_fmt.append(f"{MESES_ES[int(mo)]} {y}")
+            except:
+                labels_fmt.append(m)
+        return jsonify({
+            'labels': labels_fmt,
+            'counts': [m[1] for m in ordenado],
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reportes/calidad-datos')
+def api_reporte_calidad():
+    """R6: Índice de calidad de registro de datos clínicos."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        r_pac = supabase.table('Paciente').select('"DNI","Nombres","Apellidos","fecNacimiento","Genero","Celular"').execute()
+        total_pac = len(r_pac.data)
+        campos_pac = {'DNI': 0, 'Nombres': 0, 'Apellidos': 0, 'Fecha Nacimiento': 0, 'Género': 0, 'Celular': 0}
+        for p in r_pac.data:
+            if p.get('DNI'): campos_pac['DNI'] += 1
+            if p.get('Nombres'): campos_pac['Nombres'] += 1
+            if p.get('Apellidos'): campos_pac['Apellidos'] += 1
+            if p.get('fecNacimiento'): campos_pac['Fecha Nacimiento'] += 1
+            if p.get('Genero'): campos_pac['Género'] += 1
+            if p.get('Celular'): campos_pac['Celular'] += 1
+        completitud = {k: round(v * 100 / total_pac) if total_pac else 0 for k, v in campos_pac.items()}
+        
+        r_ev = supabase.table('EVALUACIONES_CLINICAS').select('"Dx","PresionA","Hta","Dm2"').execute()
+        total_ev = len(r_ev.data)
+        campos_ev = {'DX': 0, 'Presión': 0, 'HTA': 0, 'DM2': 0}
+        for ev in r_ev.data:
+            if ev.get('Dx'): campos_ev['DX'] += 1
+            if ev.get('PresionA'): campos_ev['Presión'] += 1
+            if ev.get('Hta'): campos_ev['HTA'] += 1
+            if ev.get('Dm2'): campos_ev['DM2'] += 1
+        completitud_ev = {k: round(v * 100 / total_ev) if total_ev else 0 for k, v in campos_ev.items()}
+        
+        todos = {**completitud, **completitud_ev}
+        return jsonify({
+            'labels': list(todos.keys()),
+            'porcentajes': list(todos.values()),
+            'total_pacientes': total_pac,
+            'total_evaluaciones': total_ev,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 from datetime import datetime
 
 def calcular_edad(fec_nac_str):
