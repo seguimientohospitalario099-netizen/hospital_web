@@ -592,23 +592,41 @@ def api_buscar_paciente_dni():
 
         establecimiento = {}
         primera_atencion = {}
+        segunda_atencion = {}
         if r_est.data:
-            # Buscar la primera atención que tenga datos (Lote, Fecha o FUA)
-            at = next((x for x in r_est.data if x.get('Lote') or x.get('NumFua') or x.get('FechaAtencion')), r_est.data[0])
+            # Separar las atenciones válidas e inválidas para poder extraer la 1ra y 2da correctamente
+            valid_ats = [x for x in r_est.data if x.get('Lote') or x.get('NumFua') or x.get('FechaAtencion')]
+            if len(valid_ats) == 0:
+                at1 = r_est.data[0] if len(r_est.data) > 0 else {}
+                at2 = r_est.data[1] if len(r_est.data) > 1 else {}
+            else:
+                at1 = valid_ats[0]
+                at2 = valid_ats[1] if len(valid_ats) > 1 else {}
             
-            if at.get('ESTABLECIMIENTO_SALUD'):
-                establecimiento = at['ESTABLECIMIENTO_SALUD']
+            if at1.get('ESTABLECIMIENTO_SALUD'):
+                establecimiento = at1['ESTABLECIMIENTO_SALUD']
             
-            evs = at.get('EVALUACIONES_CLINICAS') or []
-            ev = evs[0] if evs else {}
+            evs1 = at1.get('EVALUACIONES_CLINICAS') or []
+            ev1 = evs1[0] if evs1 else {}
             
             primera_atencion = {
-                'lote': at.get('Lote') or '',
-                'fua': at.get('NumFua') or '',
-                'fecha': at.get('FechaAtencion') or '',
-                'seguro': at.get('Seguro') or '',
-                'dx': ev.get('Dx') or '',
-                'presion': ev.get('PresionA') or ''
+                'lote': at1.get('Lote') or '',
+                'fua': at1.get('NumFua') or '',
+                'fecha': at1.get('FechaAtencion') or '',
+                'seguro': at1.get('Seguro') or '',
+                'dx': ev1.get('Dx') or '',
+                'presion': ev1.get('PresionA') or ''
+            }
+
+            evs2 = at2.get('EVALUACIONES_CLINICAS') or []
+            ev2 = evs2[0] if evs2 else {}
+            
+            segunda_atencion = {
+                'lote': at2.get('Lote') or '',
+                'fua': at2.get('NumFua') or '',
+                'fecha': at2.get('FechaAtencion') or '',
+                'dx': ev2.get('Dx') or '',
+                'presion': ev2.get('PresionA') or ''
             }
 
         return jsonify({
@@ -623,6 +641,7 @@ def api_buscar_paciente_dni():
             'celular':       p.get('Celular')        or '',
             'establecimiento': establecimiento,
             'primera_atencion': primera_atencion,
+            'segunda_atencion': segunda_atencion,
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -668,6 +687,65 @@ def api_guardar_paciente():
             nuevo_id = ins.data[0]['IdPaciente']
 
         return jsonify({'ok': True, 'id_paciente': nuevo_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/atencion/guardar', methods=['POST'])
+def api_guardar_atencion():
+    """Crea o actualiza una atención (1 o 2) de un paciente."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    datos = request.get_json(force=True) or {}
+    id_pac = datos.get('id_paciente')
+    num_aten = int(datos.get('num_atencion', 1)) 
+    
+    if not id_pac:
+        return jsonify({'error': 'Falta ID del paciente'}), 400
+
+    try:
+        # Obtener atenciones existentes del paciente ordenadas
+        r_est = supabase.table('ATENCIONES').select('"IdAtencion"').eq('"IdPaciente"', id_pac).order('"IdAtencion"').execute()
+        atenciones = r_est.data or []
+
+        id_atencion = None
+        if num_aten == 1 and len(atenciones) > 0:
+            id_atencion = atenciones[0]['IdAtencion']
+        elif num_aten == 2 and len(atenciones) > 1:
+            id_atencion = atenciones[1]['IdAtencion']
+
+        atencion_payload = {
+            'IdPaciente': id_pac,
+            'Lote': datos.get('lote') or None,
+            'NumFua': datos.get('fua') or None,
+            'FechaAtencion': datos.get('fecha') or None,
+        }
+        if 'seguro' in datos:
+            atencion_payload['Seguro'] = datos.get('seguro')
+
+        if id_atencion:
+            supabase.table('ATENCIONES').update(atencion_payload).eq('"IdAtencion"', id_atencion).execute()
+        else:
+            res_at = supabase.table('ATENCIONES').insert(atencion_payload).execute()
+            id_atencion = res_at.data[0]['IdAtencion']
+
+        # Guardar la evaluación clínica (Dx y Presion)
+        dx = datos.get('dx') or None
+        presion = datos.get('presion') or None
+        
+        r_ev = supabase.table('EVALUACIONES_CLINICAS').select('"IdEvaluacion"').eq('"IdAtencion"', id_atencion).execute()
+        eval_payload = {
+            'IdAtencion': id_atencion,
+            'Dx': dx,
+            'PresionA': presion
+        }
+        if r_ev.data:
+            supabase.table('EVALUACIONES_CLINICAS').update(eval_payload).eq('"IdEvaluacion"', r_ev.data[0]['IdEvaluacion']).execute()
+        else:
+            supabase.table('EVALUACIONES_CLINICAS').insert(eval_payload).execute()
+
+        return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

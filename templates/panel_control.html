@@ -853,8 +853,46 @@
                         </div>
                         
                         <!-- El botón REGISTRAR de la primera atención -->
-                        <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-end; grid-column: span 3;">
-                            <button type="button" class="btn-dark" style="margin-top: auto;">REGISTRAR</button>
+                        <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-end; grid-column: span 3; gap: 10px;">
+                            <span id="msg-primera-atencion" style="color: #00b85c; font-weight: 700; margin-right: auto; display: none;"><i class="fas fa-check-circle"></i> Primera Atención Registrada</span>
+                            <button type="button" class="btn-dark" style="margin-top: auto;" onclick="mostrarSegundaAtencion()">Continuar</button>
+                            <button type="button" class="btn-green" style="margin-top: auto;" onclick="guardarAtencionForm(1)">REGISTRAR</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sección Segunda Atención (oculta por defecto) -->
+            <div id="section-segunda-atencion" style="display: none; margin-top: 50px; border-top: 1px solid #edf1fa; padding-top: 40px;">
+                <h3 class="card-title" style="margin-bottom: 20px; font-weight: 700; color: #000; text-transform: uppercase;">SEGUNDA ATENCIÓN</h3>
+                <form id="form-segunda-atencion">
+                    <div class="form-paciente-grid">
+                        <div class="form-paciente-group">
+                            <label>LOTE</label>
+                            <input type="text" id="form-lote-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>N° FUA</label>
+                            <input type="text" id="form-fua-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>FECHA DE ATENCIÓN</label>
+                            <input type="date" id="form-fecha-aten-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        
+                        <div class="form-paciente-group">
+                            <label>DX</label>
+                            <input type="text" id="form-dx-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        <div class="form-paciente-group">
+                            <label>PRESION</label>
+                            <input type="text" id="form-presion-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        </div>
+                        
+                        <!-- El botón REGISTRAR de la segunda atención -->
+                        <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-end;">
+                            <span id="msg-segunda-atencion" style="color: #00b85c; font-weight: 700; margin-right: 15px; display: none;"><i class="fas fa-check-circle"></i> Segunda Atención Registrada</span>
+                            <button type="button" class="btn-green" style="margin-top: auto;" onclick="guardarAtencionForm(2)">REGISTRAR</button>
                         </div>
                     </div>
                 </form>
@@ -1200,6 +1238,13 @@
                     document.getElementById('form-presion').value = '';
                     document.getElementById('form-seguro').value = '';
                     
+                    // Limpiar también segunda atención
+                    document.getElementById('form-lote-2').value = '';
+                    document.getElementById('form-fua-2').value = '';
+                    document.getElementById('form-fecha-aten-2').value = '';
+                    document.getElementById('form-dx-2').value = '';
+                    document.getElementById('form-presion-2').value = '';
+                    
                     return;
                 }
 
@@ -1241,6 +1286,20 @@
                     document.getElementById('form-dx').value = '';
                     document.getElementById('form-presion').value = '';
                     document.getElementById('form-seguro').value = '';
+                }
+                // Autocompletar Segunda Atencion
+                if (data.segunda_atencion) {
+                    document.getElementById('form-lote-2').value = data.segunda_atencion.lote || '';
+                    document.getElementById('form-fua-2').value = data.segunda_atencion.fua || '';
+                    document.getElementById('form-fecha-aten-2').value = data.segunda_atencion.fecha ? data.segunda_atencion.fecha.substring(0, 10) : '';
+                    document.getElementById('form-dx-2').value = data.segunda_atencion.dx || '';
+                    document.getElementById('form-presion-2').value = data.segunda_atencion.presion || '';
+                } else {
+                    document.getElementById('form-lote-2').value = '';
+                    document.getElementById('form-fua-2').value = '';
+                    document.getElementById('form-fecha-aten-2').value = '';
+                    document.getElementById('form-dx-2').value = '';
+                    document.getElementById('form-presion-2').value = '';
                 }
 
             } catch (err) {
@@ -1298,6 +1357,59 @@
             if (!inputLote.value) {
                 const currentYear = new Date().getFullYear().toString().slice(-2);
                 inputLote.value = currentYear;
+            }
+        }
+
+        function mostrarSegundaAtencion() {
+            document.getElementById('section-segunda-atencion').style.display = 'block';
+            
+            const inputLote = document.getElementById('form-lote-2');
+            if (!inputLote.value) {
+                const currentYear = new Date().getFullYear().toString().slice(-2);
+                inputLote.value = currentYear;
+            }
+        }
+
+        async function guardarAtencionForm(num_atencion) {
+            const id_paciente = document.getElementById('form-id-paciente').value;
+            if (!id_paciente) {
+                alert("Primero debes registrar al paciente en la base de datos.");
+                return;
+            }
+
+            const suffix = num_atencion === 1 ? '' : '-2';
+            const payload = {
+                id_paciente: id_paciente,
+                num_atencion: num_atencion,
+                lote: document.getElementById('form-lote' + suffix).value.trim(),
+                fua: document.getElementById('form-fua' + suffix).value.trim(),
+                fecha: document.getElementById('form-fecha-aten' + suffix).value,
+                dx: document.getElementById('form-dx' + suffix).value.trim(),
+                presion: document.getElementById('form-presion' + suffix).value.trim()
+            };
+
+            if (num_atencion === 1) {
+                payload.seguro = document.getElementById('form-seguro').value.trim();
+            }
+
+            try {
+                const res = await fetch('/api/atencion/guardar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (res.ok && data.ok) {
+                    const msgEl = num_atencion === 1 ? document.getElementById('msg-primera-atencion') : document.getElementById('msg-segunda-atencion');
+                    msgEl.style.display = 'inline-block';
+                    setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+                } else {
+                    alert(data.error || "Error al guardar la atención.");
+                }
+            } catch (err) {
+                alert("Error de red al guardar los datos de atención.");
+                console.error(err);
             }
         }
 
