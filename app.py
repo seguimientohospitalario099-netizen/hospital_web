@@ -647,6 +647,56 @@ def api_buscar_paciente_dni():
         return jsonify({'error': str(e)}), 500
 
 
+from datetime import datetime
+
+def calcular_edad(fec_nac_str):
+    if not fec_nac_str:
+        return ''
+    try:
+        fec_nac = datetime.strptime(fec_nac_str[:10], '%Y-%m-%d')
+        hoy = datetime.now()
+        edad = hoy.year - fec_nac.year - ((hoy.month, hoy.day) < (fec_nac.month, fec_nac.day))
+        return str(edad)
+    except:
+        return ''
+
+@app.route('/api/pacientes/ultimos')
+def api_ultimos_pacientes():
+    """Devuelve los últimos 5 pacientes registrados para la tabla Pacientes Ingresados."""
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    try:
+        resp = supabase.table('Paciente').select('*').order('"IdPaciente"', desc=True).limit(5).execute()
+        pacientes = []
+        for p in resp.data:
+            edad = calcular_edad(p.get('fecNacimiento'))
+            genero = (p.get('Genero') or '').title()
+            
+            fec_str = p.get('fecNacimiento')
+            if fec_str:
+                try:
+                    f_obj = datetime.strptime(fec_str[:10], '%Y-%m-%d')
+                    fec_formateada = f_obj.strftime('%d/%m/%Y')
+                except:
+                    fec_formateada = fec_str[:10]
+            else:
+                fec_formateada = ''
+                
+            nombres_completos = f"{p.get('Nombres') or ''} {p.get('Apellidos') or ''}".strip()
+
+            pacientes.append({
+                'id_paciente': p.get('IdPaciente'),
+                'nombres': nombres_completos,
+                'dni': p.get('DNI') or '',
+                'edad_sexo': f"{edad} / {genero}" if edad else genero,
+                'celular': p.get('Celular') or 'N/A',
+                'fec_nacimiento': fec_formateada or '—',
+                'establecimiento': 'S/N'
+            })
+        return jsonify(pacientes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/paciente/guardar', methods=['POST'])
 def api_guardar_paciente():
     """Crea o actualiza los datos personales de un paciente."""

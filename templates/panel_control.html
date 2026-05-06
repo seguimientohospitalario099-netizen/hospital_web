@@ -719,33 +719,8 @@
                             <th style="text-align: right;">Fec. Nacimiento</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% if pacientes_lista %}
-                        {% for p in pacientes_lista %}
-                        <tr>
-                            <td style="color: #a0a5ba; font-weight: 600;">{{ p.num_registro }}</td>
-                            <td>
-                                <div style="font-weight: 600; color: #2b1b54;">{{ p.nombres }}</div>
-                                <div style="font-size: 11px; color: #7b839e;">Est: {{ p.establecimiento or 'S/N' }}
-                                </div>
-                            </td>
-                            <td>{{ p.dni }}</td>
-                            <td>{{ p.edad }} <span style="color:#a0a5ba;">/</span> {{ p.genero | title }}</td>
-                            <td>{{ p.celular or 'N/A' }}</td>
-                            <td style="text-align: right; color: #43405c; font-size: 13px; font-weight: 500;">
-                                {{ (p.fec_naci or '')[:10] or '—' }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="6" style="text-align:center; padding: 40px; color: #a0a5ba;">
-                                <i class="fas fa-user-friends"
-                                    style="font-size:30px; margin-bottom:15px; opacity:0.5;"></i><br>
-                                No hay pacientes registrados aun.
-                            </td>
-                        </tr>
-                        {% endif %}
+                    <tbody id="tbody-pacientes-ingresados">
+                        <!-- Llenado por JS dinámicamente -->
                     </tbody>
                 </table>
             </div>
@@ -1072,6 +1047,10 @@
             });
             event.currentTarget.classList.add('active');
             window.history.replaceState(null, null, '/panel-de-control/' + sectionId);
+            
+            if (sectionId === 'pacientes-ingresados') {
+                cargarUltimosPacientes();
+            }
         }
 
         // ── SEGUIMIENTO ──────────────────────────────────────────
@@ -1175,6 +1154,7 @@
         // Enter en el campo DNI dispara la búsqueda
         document.addEventListener('DOMContentLoaded', function () {
             cargarEstablecimientos();
+            cargarUltimosPacientes();
             
             const inp = document.getElementById('seg-dni-input');
             if (inp) inp.addEventListener('keydown', function (e) {
@@ -1340,6 +1320,9 @@
                 if (res.ok && data.ok) {
                     alert("Datos personales del paciente guardados correctamente.");
                     document.getElementById('form-id-paciente').value = data.id_paciente; 
+                    
+                    // Actualizamos la tabla de últimos pacientes ingresados silenciosamente
+                    cargarUltimosPacientes();
                 } else {
                     alert(data.error || "Error al guardar los datos del paciente.");
                 }
@@ -1410,6 +1393,45 @@
             } catch (err) {
                 alert("Error de red al guardar los datos de atención.");
                 console.error(err);
+            }
+        }
+
+        /* --- PACIENTES INGRESADOS --- */
+        async function cargarUltimosPacientes() {
+            try {
+                const res = await fetch('/api/pacientes/ultimos');
+                const data = await res.json();
+                const tbody = document.getElementById('tbody-pacientes-ingresados');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                if (data.error || data.length === 0) {
+                    tbody.innerHTML = `<tr>
+                        <td colspan="6" style="text-align:center; padding: 40px; color: #a0a5ba;">
+                            <i class="fas fa-user-friends" style="font-size:30px; margin-bottom:15px; opacity:0.5;"></i><br>
+                            No hay pacientes registrados aun.
+                        </td>
+                    </tr>`;
+                    return;
+                }
+
+                data.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="color: #a0a5ba; font-weight: 600;">${p.id_paciente}</td>
+                        <td>
+                            <div style="font-weight: 600; color: #2b1b54;">${p.nombres}</div>
+                            <div style="font-size: 11px; color: #7b839e;">Est: ${p.establecimiento}</div>
+                        </td>
+                        <td>${p.dni}</td>
+                        <td>${p.edad_sexo}</td>
+                        <td>${p.celular}</td>
+                        <td style="text-align: right; color: #43405c; font-size: 13px; font-weight: 500;">${p.fec_nacimiento}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Error cargando últimos pacientes:", err);
             }
         }
 
