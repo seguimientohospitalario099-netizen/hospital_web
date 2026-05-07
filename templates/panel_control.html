@@ -722,9 +722,10 @@
                                                 }}>Administrador</option>
                                             {% endif %}
                                         </select>
-                                        <button type="submit" class="btn-primary"
-                                            style="width: 100%; margin-top: 15px;"><i class="fas fa-save"></i> Guardar
-                                            Cambios</button>
+                                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                            <button type="submit" class="btn-primary" style="flex: 1;"><i class="fas fa-save"></i> Guardar Cambios</button>
+                                            <button type="button" class="btn-dark" style="flex: 1;" onclick="this.closest('details').open = false;"><i class="fas fa-times"></i> Cancelar</button>
+                                        </div>
                                     </form>
                                 </details>
 
