@@ -1149,6 +1149,9 @@
             event.currentTarget.classList.add('active');
             window.history.replaceState(null, null, '/panel-de-control/' + sectionId);
             
+            if (sectionId === 'ingreso-paciente') {
+                cargarEstablecimientos();
+            }
             if (sectionId === 'pacientes-ingresados') {
                 cargarUltimosPacientes();
             }
@@ -1284,6 +1287,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     const select = document.getElementById('form-establecimiento');
+                    select.innerHTML = '<option value="">Seleccione</option>';
                     data.forEach(est => {
                         const option = document.createElement('option');
                         option.value = est.IdEstablecimiento;
