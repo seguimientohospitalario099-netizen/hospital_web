@@ -662,8 +662,9 @@ def fetch_all_rows(table, select_cols, filters=None):
     while True:
         q = supabase.table(table).select(select_cols).range(offset, offset + page - 1)
         if filters:
-            for method, *args in filters:
-                q = getattr(q, method)(*args)
+            # filters es lista de (columna, operador, valor)  →  se usa .filter()
+            for col, op, val in filters:
+                q = q.filter(col, op, val)
         r = q.execute()
         if not r.data:
             break
@@ -793,7 +794,7 @@ def api_reporte_establecimientos():
         rows = fetch_all_rows(
             'ATENCIONES',
             '"IdEstablecimiento",ESTABLECIMIENTO_SALUD("NombreEstablecimiento")',
-            filters=[('not_.is_', '"IdEstablecimiento"', 'null')]
+            filters=[('IdEstablecimiento', 'not.is', 'null')]
         )
         conteo = Counter()
         for at in rows:
@@ -820,7 +821,7 @@ def api_reporte_tendencia():
     try:
         from collections import Counter
         rows = fetch_all_rows('ATENCIONES', '"FechaAtencion"',
-            filters=[('not_.is_', '"FechaAtencion"', 'null')])
+            filters=[('FechaAtencion', 'not.is', 'null')])
         meses = Counter()
         for at in rows:
             fecha = at.get('FechaAtencion')
@@ -984,6 +985,21 @@ def api_guardar_paciente():
             # Insertar nuevo paciente
             ins = supabase.table('Paciente').insert(payload).execute()
             nuevo_id = ins.data[0]['IdPaciente']
+
+        # Si viene un establecimiento seleccionado, guardarlo en ATENCIONES
+        if id_est:
+            # Buscar si ya existe una atención para este paciente
+            r_at = supabase.table('ATENCIONES').select('"IdAtencion","IdEstablecimiento"').eq('"IdPaciente"', nuevo_id).order('"IdAtencion"').limit(1).execute()
+            if r_at.data:
+                id_at = r_at.data[0]['IdAtencion']
+                # Solo actualizar si el est. está vacío o fue cambiado
+                supabase.table('ATENCIONES').update({'IdEstablecimiento': int(id_est)}).eq('"IdAtencion"', id_at).execute()
+            else:
+                # Crear primera atención básica con el establecimiento
+                supabase.table('ATENCIONES').insert({
+                    'IdPaciente': nuevo_id,
+                    'IdEstablecimiento': int(id_est)
+                }).execute()
 
         return jsonify({'ok': True, 'id_paciente': nuevo_id})
     except Exception as e:
