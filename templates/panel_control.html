@@ -577,9 +577,6 @@
         </div>
         <nav>
             {% if session.get('rol') in ['administrador', 'desarrollador'] %}
-            <a href="#" onclick="showSection(event, 'dashboard')"
-                class="nav-link {{ 'active' if seccion == 'dashboard' else '' }}"><i class="fas fa-home"></i>
-                Dashboard</a>
             <a href="#" onclick="showSection(event, 'gestion-usuarios')"
                 class="nav-link {{ 'active' if seccion == 'gestion-usuarios' else '' }}"><i class="fas fa-users"></i>
                 Gestión Usuarios</a>
@@ -613,11 +610,6 @@
 
 
         <!-- Secciones estilo SPA, precargadas y controladas por JS -->
-        <div class="card section-container" id="section-dashboard"
-            style="{{ 'display:block;' if seccion == 'dashboard' else 'display:none;' }}">
-            <h3 class="card-title"><i class="fas fa-chart-line"></i> Resumen del Sistema</h3>
-            <p style="color: #6c6a85;">Bienvenido al resumen estadístico del hospital.</p>
-        </div>
 
         <div class="card section-container" id="section-gestion-usuarios"
             style="{{ 'display:block;' if seccion == 'gestion-usuarios' else 'display:none;' }}">

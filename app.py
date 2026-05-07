@@ -126,7 +126,7 @@ def login():
             session['rol'] = response.data[0]['rol']
             
             if session['rol'] in ['administrador', 'desarrollador']:
-                return redirect(url_for('panel_control', seccion='dashboard'))
+                return redirect(url_for('panel_control', seccion='gestion-usuarios'))
             else:
                 # El rol 'usuario' solo puede acceder a Ingreso, Seguimiento y Reportes
                 return redirect(url_for('panel_control', seccion='ingreso-paciente'))
@@ -144,7 +144,7 @@ def logout():
 
 @app.route('/panel-de-control')
 @app.route('/panel-de-control/<seccion>', methods=['GET', 'POST'])
-def panel_control(seccion='dashboard'):
+def panel_control(seccion='gestion-usuarios'):
     if 'user' not in session:
         flash('Acceso denegado. Por favor, inicie sesión.')
         return redirect(url_for('home'))
