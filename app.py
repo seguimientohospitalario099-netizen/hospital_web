@@ -653,6 +653,27 @@ def api_buscar_paciente_dni():
 #  API DE REPORTES ESTADÍSTICOS (6 reportes estratégicos)
 # ═══════════════════════════════════════════════════════
 
+# ─── Utilidad de paginación: obtiene TODOS los registros superando el límite de 1000 ───
+def fetch_all_rows(table, select_cols, filters=None):
+    """Pagina por bloques de 1000 para traer todos los registros de una tabla."""
+    all_data = []
+    offset   = 0
+    page     = 1000
+    while True:
+        q = supabase.table(table).select(select_cols).range(offset, offset + page - 1)
+        if filters:
+            for method, *args in filters:
+                q = getattr(q, method)(*args)
+        r = q.execute()
+        if not r.data:
+            break
+        all_data.extend(r.data)
+        if len(r.data) < page:
+            break
+        offset += page
+    return all_data
+
+
 @app.route('/api/reportes/demografia')
 def api_reporte_demografia():
     """R1: Distribución demográfica por grupos de edad y sexo."""
@@ -660,13 +681,13 @@ def api_reporte_demografia():
         return jsonify({'error': 'No autenticado'}), 401
     try:
         from datetime import datetime
-        r = supabase.table('Paciente').select('"fecNacimiento","Genero"').execute()
+        rows = fetch_all_rows('Paciente', '"fecNacimiento","Genero"')
         hoy = datetime.now()
         grupos = {
             'M': {'0-17': 0, '18-29': 0, '30-44': 0, '45-59': 0, '60+': 0},
             'F': {'0-17': 0, '18-29': 0, '30-44': 0, '45-59': 0, '60+': 0},
         }
-        for p in r.data:
+        for p in rows:
             fec = p.get('fecNacimiento')
             gen = (p.get('Genero') or '').lower()
             sexo = 'F' if 'fem' in gen else 'M'
@@ -696,11 +717,11 @@ def api_reporte_patologias():
         return jsonify({'error': 'No autenticado'}), 401
     try:
         from collections import Counter
-        r = supabase.table('EVALUACIONES_CLINICAS').select('"Dx","Hta","Dm2"').execute()
+        rows = fetch_all_rows('EVALUACIONES_CLINICAS', '"Dx","Hta","Dm2"')
         dx_counter = Counter()
         hta_si = 0
         dm2_si = 0
-        for ev in r.data:
+        for ev in rows:
             dx = (ev.get('Dx') or '').strip().upper()
             if dx:
                 dx_counter[dx] += 1
@@ -714,7 +735,7 @@ def api_reporte_patologias():
             'dx_counts': [t[1] for t in top],
             'hta': hta_si,
             'dm2': dm2_si,
-            'total': len(r.data),
+            'total': len(rows),
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -727,13 +748,14 @@ def api_reporte_riesgo():
         return jsonify({'error': 'No autenticado'}), 401
     try:
         from datetime import datetime
-        r = supabase.table('ATENCIONES')\
-            .select('"IdPaciente",Paciente("fecNacimiento"),EVALUACIONES_CLINICAS("Hta","Dm2")')\
-            .execute()
+        rows = fetch_all_rows(
+            'ATENCIONES',
+            '"IdPaciente",Paciente("fecNacimiento"),EVALUACIONES_CLINICAS("Hta","Dm2")'
+        )
         hoy = datetime.now()
         grupos_hta = {'30-44': 0, '45-59': 0, '60+': 0}
         grupos_dm2 = {'30-44': 0, '45-59': 0, '60+': 0}
-        for at in r.data:
+        for at in rows:
             pac = at.get('Paciente') or {}
             fec = pac.get('fecNacimiento')
             evs = at.get('EVALUACIONES_CLINICAS') or []
@@ -768,13 +790,13 @@ def api_reporte_establecimientos():
         return jsonify({'error': 'No autenticado'}), 401
     try:
         from collections import Counter
-        r = supabase.table('ATENCIONES')\
-            .select('"IdEstablecimiento",ESTABLECIMIENTO_SALUD("NombreEstablecimiento")')\
-            .not_.is_('"IdEstablecimiento"', 'null')\
-            .execute()
+        rows = fetch_all_rows(
+            'ATENCIONES',
+            '"IdEstablecimiento",ESTABLECIMIENTO_SALUD("NombreEstablecimiento")',
+            filters=[('not_.is_', '"IdEstablecimiento"', 'null')]
+        )
         conteo = Counter()
-        nombres = {}
-        for at in r.data:
+        for at in rows:
             id_est = at.get('IdEstablecimiento')
             est = at.get('ESTABLECIMIENTO_SALUD') or {}
             nombre = est.get('NombreEstablecimiento') or f'Est#{id_est}'
@@ -797,9 +819,10 @@ def api_reporte_tendencia():
         return jsonify({'error': 'No autenticado'}), 401
     try:
         from collections import Counter
-        r = supabase.table('ATENCIONES').select('"FechaAtencion"').not_.is_('"FechaAtencion"', 'null').execute()
+        rows = fetch_all_rows('ATENCIONES', '"FechaAtencion"',
+            filters=[('not_.is_', '"FechaAtencion"', 'null')])
         meses = Counter()
-        for at in r.data:
+        for at in rows:
             fecha = at.get('FechaAtencion')
             if fecha and len(fecha) >= 7:
                 meses[fecha[:7]] += 1
@@ -827,10 +850,10 @@ def api_reporte_calidad():
     if 'user' not in session:
         return jsonify({'error': 'No autenticado'}), 401
     try:
-        r_pac = supabase.table('Paciente').select('"DNI","Nombres","Apellidos","fecNacimiento","Genero","Celular"').execute()
-        total_pac = len(r_pac.data)
+        r_pac = fetch_all_rows('Paciente', '"DNI","Nombres","Apellidos","fecNacimiento","Genero","Celular"')
+        total_pac = len(r_pac)
         campos_pac = {'DNI': 0, 'Nombres': 0, 'Apellidos': 0, 'Fecha Nacimiento': 0, 'Género': 0, 'Celular': 0}
-        for p in r_pac.data:
+        for p in r_pac:
             if p.get('DNI'): campos_pac['DNI'] += 1
             if p.get('Nombres'): campos_pac['Nombres'] += 1
             if p.get('Apellidos'): campos_pac['Apellidos'] += 1
@@ -839,10 +862,10 @@ def api_reporte_calidad():
             if p.get('Celular'): campos_pac['Celular'] += 1
         completitud = {k: round(v * 100 / total_pac) if total_pac else 0 for k, v in campos_pac.items()}
         
-        r_ev = supabase.table('EVALUACIONES_CLINICAS').select('"Dx","PresionA","Hta","Dm2"').execute()
-        total_ev = len(r_ev.data)
+        r_ev = fetch_all_rows('EVALUACIONES_CLINICAS', '"Dx","PresionA","Hta","Dm2"')
+        total_ev = len(r_ev)
         campos_ev = {'DX': 0, 'Presión': 0, 'HTA': 0, 'DM2': 0}
-        for ev in r_ev.data:
+        for ev in r_ev:
             if ev.get('Dx'): campos_ev['DX'] += 1
             if ev.get('PresionA'): campos_ev['Presión'] += 1
             if ev.get('Hta'): campos_ev['HTA'] += 1
@@ -897,6 +920,19 @@ def api_ultimos_pacientes():
                 
             nombres_completos = f"{p.get('Nombres') or ''} {p.get('Apellidos') or ''}".strip()
 
+            # Buscar el establecimiento del paciente desde ATENCIONES
+            est_nombre = 'S/N'
+            try:
+                r_est = supabase.table('ATENCIONES')\
+                    .select('ESTABLECIMIENTO_SALUD("NombreEstablecimiento")')\
+                    .eq('"IdPaciente"', p['IdPaciente'])\
+                    .not_.is_('"IdEstablecimiento"', 'null')\
+                    .limit(1).execute()
+                if r_est.data and r_est.data[0].get('ESTABLECIMIENTO_SALUD'):
+                    est_nombre = r_est.data[0]['ESTABLECIMIENTO_SALUD'].get('NombreEstablecimiento') or 'S/N'
+            except:
+                pass
+
             pacientes.append({
                 'id_paciente': p.get('IdPaciente'),
                 'nombres': nombres_completos,
@@ -904,7 +940,7 @@ def api_ultimos_pacientes():
                 'edad_sexo': f"{edad} / {genero}" if edad else genero,
                 'celular': p.get('Celular') or 'N/A',
                 'fec_nacimiento': fec_formateada or '—',
-                'establecimiento': 'S/N'
+                'establecimiento': est_nombre
             })
         return jsonify(pacientes)
     except Exception as e:
