@@ -576,6 +576,7 @@
             <h2>San José</h2>
         </div>
         <nav>
+            {% if session.get('rol') in ['administrador', 'desarrollador'] %}
             <a href="#" onclick="showSection(event, 'dashboard')"
                 class="nav-link {{ 'active' if seccion == 'dashboard' else '' }}"><i class="fas fa-home"></i>
                 Dashboard</a>
@@ -585,6 +586,7 @@
             <a href="#" onclick="showSection(event, 'pacientes-ingresados')"
                 class="nav-link {{ 'active' if seccion == 'pacientes-ingresados' else '' }}"><i
                     class="fas fa-list-alt"></i> Pacientes Ingresados</a>
+            {% endif %}
             <a href="#" onclick="showSection(event, 'ingreso-paciente')"
                 class="nav-link {{ 'active' if seccion == 'ingreso-paciente' else '' }}"><i
                     class="fas fa-user-plus"></i> Ingreso Paciente</a>

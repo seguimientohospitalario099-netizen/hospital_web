@@ -127,7 +127,9 @@ def login():
             
             if session['rol'] in ['administrador', 'desarrollador']:
                 return redirect(url_for('panel_control', seccion='dashboard'))
-            return redirect(url_for('inicio_estandar'))
+            else:
+                # El rol 'usuario' solo puede acceder a Ingreso, Seguimiento y Reportes
+                return redirect(url_for('panel_control', seccion='ingreso-paciente'))
         else:
             flash('Credenciales incorrectas.')
             return redirect(url_for('home'))
@@ -143,9 +145,16 @@ def logout():
 @app.route('/panel-de-control')
 @app.route('/panel-de-control/<seccion>', methods=['GET', 'POST'])
 def panel_control(seccion='dashboard'):
-    if 'user' not in session or session.get('rol') not in ['administrador', 'desarrollador']:
-        flash('Acceso denegado.')
+    if 'user' not in session:
+        flash('Acceso denegado. Por favor, inicie sesión.')
         return redirect(url_for('home'))
+        
+    rol_actual = session.get('rol')
+    
+    # Restricción estricta para rol 'usuario'
+    if rol_actual == 'usuario':
+        if seccion not in ['ingreso-paciente', 'seguimiento-pacientes', 'reportes']:
+            seccion = 'ingreso-paciente'
 
     rol_actual = session.get('rol')
     usuario_actual = session.get('user')
@@ -437,11 +446,6 @@ def eliminar_usuario(nombre_user):
         flash('No puedes auto-eliminarte.')
     
     return redirect(url_for('panel_control', seccion='gestion-usuarios'))
-
-@app.route('/inicio')
-def inicio_estandar():
-    if 'user' not in session: return redirect(url_for('home'))
-    return "<h1>Hospital San José</h1><p>Panel de Usuario.</p><a href='/logout'>Cerrar Sesión</a>"
 
 # ─────────────────────────────────────────────────────────────
 # API: SEGUIMIENTO — buscar paciente por DNI
