@@ -521,6 +521,47 @@
         .btn-dark:hover {
             background-color: #1a3260;
         }
+
+        /* ── Ingreso Paciente: grid responsivo ── */
+        .ip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .ip-field { display: flex; flex-direction: column; }
+        .ip-field--wide { grid-column: span 2; }
+        .ip-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #7b839e;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 6px;
+        }
+        .ip-input {
+            padding: 11px 14px;
+            border: 1.5px solid #d5dae8;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2b1b54;
+            outline: none;
+            background: #fff;
+            transition: border-color .2s, box-shadow .2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .ip-input:focus {
+            border-color: #5532d8;
+            box-shadow: 0 0 0 3px rgba(85,50,216,.08);
+        }
+        @media (max-width: 900px) {
+            .ip-grid { grid-template-columns: repeat(2, 1fr); }
+            .ip-field--wide { grid-column: span 2; }
+        }
+        @media (max-width: 560px) {
+            .ip-grid { grid-template-columns: 1fr; }
+            .ip-field--wide { grid-column: span 1; }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -728,152 +769,218 @@
 
         </div>
 
-        <!-- Nueva sección vacía: Ingreso Paciente -->
+        <!-- Ingreso Paciente (rediseñado) -->
         <div class="card section-container" id="section-ingreso-paciente"
-            style="{{ 'display:block;' if seccion == 'ingreso-paciente' else 'display:none;' }}; padding-top: 40px;">
-            
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            style="{{ 'display:block;' if seccion == 'ingreso-paciente' else 'display:none;' }}">
+
+            <!-- Header de sección -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:28px;">
                 <div>
-                    <h3 class="card-title" style="margin-bottom: 5px; font-weight: 700; color: #000;">INGRESO DE PACIENTES</h3>
+                    <h3 class="card-title" style="margin:0;"><i class="fas fa-user-plus" style="color:#5532d8;"></i> Ingreso de Paciente</h3>
+                    <p style="color:#7b839e; margin:4px 0 0; font-size:13px;">Registra o actualiza los datos del paciente para continuar con la atención clínica.</p>
                 </div>
-                <div style="width: 250px;">
-                    <label style="font-size: 12px; font-weight: 500; color: #000; text-transform: uppercase; display: block; margin-bottom: 6px;">Buscar por DNI</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="form-buscar-dni" maxlength="8" style="flex:1; padding:12px 15px; border:1.5px solid #284b8c; border-radius:2px; font-size:14px; outline:none; background:#fff;">
-                        <button onclick="buscarPacienteForm()" style="background:#284b8c; color:white; border:none; border-radius:2px; padding:0 15px; cursor:pointer;"><i class="fas fa-search"></i></button>
+                <!-- Búsqueda por DNI -->
+                <div style="display:flex; gap:8px; align-items:flex-end; flex-shrink:0;">
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:#7b839e; text-transform:uppercase; display:block; margin-bottom:6px;">Buscar por DNI</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="form-buscar-dni" maxlength="8" placeholder="Ej. 12345678"
+                                style="padding:11px 14px; border:1.5px solid #d5dae8; border-radius:8px; font-size:14px; outline:none; width:170px; transition:border-color .2s;"
+                                onfocus="this.style.borderColor='#5532d8'" onblur="this.style.borderColor='#d5dae8'">
+                            <button onclick="buscarPacienteForm()"
+                                style="background:linear-gradient(135deg,#5532d8,#7c5ce4); color:white; border:none; border-radius:8px; padding:0 16px; cursor:pointer; font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px; transition:.2s;"
+                                onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-search"></i> BUSCAR
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <form id="form-ingreso-paciente">
-                <input type="hidden" id="form-id-paciente">
-                
-                <div class="form-paciente-grid">
-                    <div class="form-paciente-group">
-                        <label>NOMBRE</label>
-                        <input type="text" id="form-nombre" required>
+            <!-- Tarjeta: Datos del Paciente -->
+            <div style="background:#f8faff; border:1px solid #edf1fa; border-radius:14px; padding:28px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:22px; padding-bottom:14px; border-bottom:1.5px solid #edf1fa;">
+                    <div style="width:34px; height:34px; background:linear-gradient(135deg,#5532d8,#7c5ce4); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-id-card" style="color:white; font-size:15px;"></i>
                     </div>
-                    <div class="form-paciente-group">
-                        <label>APELLIDO</label>
-                        <input type="text" id="form-apellido" required>
-                    </div>
-                    <div class="form-paciente-group">
-                        <label>DNI</label>
-                        <input type="text" id="form-dni" maxlength="8" required>
-                    </div>
-                    
-                    <div class="form-paciente-group">
-                        <label>ESTABLECIMIENTO</label>
-                        <select id="form-establecimiento">
-                            <option value="">Seleccione</option>
-                        </select>
-                    </div>
-                    <div class="form-paciente-group">
-                        <label>FECHA NACIMIENTO</label>
-                        <input type="date" id="form-fecha-nac" required>
-                    </div>
-                    <div class="form-paciente-group">
-                        <label>CELULAR</label>
-                        <input type="text" id="form-celular" maxlength="9" pattern="\d{9}">
-                    </div>
-
-                    <div class="form-paciente-group">
-                        <label>GENERO</label>
-                        <select id="form-genero" required>
-                            <option value="">Seleccione</option>
-                            <option value="Masculino">Masculino</option>
-                            <option value="Femenino">Femenino</option>
-                        </select>
-                    </div>
-                    <div class="form-paciente-group">
-                        <label>DIRECCION</label>
-                        <input type="text" id="form-direccion">
-                    </div>
-                    
-                    <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; gap: 10px; justify-content: flex-end;">
-                        <button type="button" class="btn-dark" style="margin-top: auto;" onclick="mostrarPrimeraAtencion()">Continuar</button>
-                        <button type="button" class="btn-green" style="margin-top: auto;" onclick="guardarPacienteForm()">INGRESAR</button>
-                    </div>
+                    <span style="font-size:14px; font-weight:700; color:#2b1b54; text-transform:uppercase; letter-spacing:.5px;">Datos del Paciente</span>
                 </div>
-            </form>
 
-            <!-- Sección Primera Atención (oculta por defecto) -->
-            <div id="section-primera-atencion" style="display: none; margin-top: 50px; border-top: 1px solid #edf1fa; padding-top: 40px;">
-                <h3 class="card-title" style="margin-bottom: 20px; font-weight: 700; color: #000; text-transform: uppercase;">PRIMERA ATENCIÓN</h3>
-                <form id="form-primera-atencion">
-                    <div class="form-paciente-grid">
-                        <div class="form-paciente-group">
-                            <label>LOTE</label>
-                            <input type="text" id="form-lote" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                <form id="form-ingreso-paciente">
+                    <input type="hidden" id="form-id-paciente">
+                    <div class="ip-grid">
+                        <!-- Fila 1 -->
+                        <div class="ip-field">
+                            <label class="ip-label">Nombre</label>
+                            <input type="text" id="form-nombre" class="ip-input" required placeholder="Nombres del paciente">
                         </div>
-                        <div class="form-paciente-group">
-                            <label>N° FUA</label>
-                            <input type="text" id="form-fua" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        <div class="ip-field">
+                            <label class="ip-label">Apellido</label>
+                            <input type="text" id="form-apellido" class="ip-input" required placeholder="Apellidos del paciente">
                         </div>
-                        <div class="form-paciente-group">
-                            <label>FECHA DE ATENCIÓN</label>
-                            <input type="date" id="form-fecha-aten" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        <div class="ip-field">
+                            <label class="ip-label">DNI</label>
+                            <input type="text" id="form-dni" class="ip-input" maxlength="8" required placeholder="8 dígitos">
                         </div>
-                        
-                        <div class="form-paciente-group">
-                            <label>DX</label>
-                            <input type="text" id="form-dx" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        <!-- Fila 2 -->
+                        <div class="ip-field">
+                            <label class="ip-label">Establecimiento</label>
+                            <select id="form-establecimiento" class="ip-input">
+                                <option value="">Seleccione...</option>
+                            </select>
                         </div>
-                        <div class="form-paciente-group">
-                            <label>PRESION</label>
-                            <input type="text" id="form-presion" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        <div class="ip-field">
+                            <label class="ip-label">Fecha de Nacimiento</label>
+                            <input type="date" id="form-fecha-nac" class="ip-input" required>
                         </div>
-                        <div class="form-paciente-group">
-                            <label>SEGURO</label>
-                            <input type="text" id="form-seguro" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+                        <div class="ip-field">
+                            <label class="ip-label">Celular</label>
+                            <input type="text" id="form-celular" class="ip-input" maxlength="9" pattern="\d{9}" placeholder="9 dígitos">
                         </div>
-                        
-                        <!-- El botón REGISTRAR de la primera atención -->
-                        <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-end; grid-column: span 3; gap: 10px;">
-                            <span id="msg-primera-atencion" style="color: #00b85c; font-weight: 700; margin-right: auto; display: none;"><i class="fas fa-check-circle"></i> Primera Atención Registrada</span>
-                            <button type="button" class="btn-dark" style="margin-top: auto;" onclick="mostrarSegundaAtencion()">Continuar</button>
-                            <button type="button" class="btn-green" style="margin-top: auto;" onclick="guardarAtencionForm(1)">REGISTRAR</button>
+                        <!-- Fila 3 -->
+                        <div class="ip-field">
+                            <label class="ip-label">Género</label>
+                            <select id="form-genero" class="ip-input" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                            </select>
                         </div>
+                        <div class="ip-field ip-field--wide">
+                            <label class="ip-label">Dirección</label>
+                            <input type="text" id="form-direccion" class="ip-input" placeholder="Dirección del paciente">
+                        </div>
+                    </div>
+
+                    <!-- Botones acción datos del paciente -->
+                    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; flex-wrap:wrap;">
+                        <button type="button" onclick="guardarPacienteForm()"
+                            style="padding:11px 28px; background:linear-gradient(135deg,#00b85c,#00d66c); color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:.2s;"
+                            onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                            <i class="fas fa-save"></i> INGRESAR
+                        </button>
+                        <button type="button" onclick="mostrarPrimeraAtencion()"
+                            style="padding:11px 28px; background:linear-gradient(135deg,#284b8c,#3a6bc4); color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:.2s;"
+                            onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                            Continuar <i class="fas fa-arrow-down"></i>
+                        </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Sección Segunda Atención (oculta por defecto) -->
-            <div id="section-segunda-atencion" style="display: none; margin-top: 50px; border-top: 1px solid #edf1fa; padding-top: 40px;">
-                <h3 class="card-title" style="margin-bottom: 20px; font-weight: 700; color: #000; text-transform: uppercase;">SEGUNDA ATENCIÓN</h3>
-                <form id="form-segunda-atencion">
-                    <div class="form-paciente-grid">
-                        <div class="form-paciente-group">
-                            <label>LOTE</label>
-                            <input type="text" id="form-lote-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
+            <!-- Tarjeta: Primera Atención (colapsable) -->
+            <div id="section-primera-atencion" style="display:none;">
+                <div style="background:#f8faff; border:1px solid #edf1fa; border-radius:14px; padding:28px; margin-bottom:20px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; padding-bottom:14px; border-bottom:1.5px solid #edf1fa; cursor:pointer;" onclick="toggleSeccion('ip-body-primera')">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:34px; height:34px; background:linear-gradient(135deg,#e74c3c,#c0392b); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-stethoscope" style="color:white; font-size:15px;"></i>
+                            </div>
+                            <span style="font-size:14px; font-weight:700; color:#2b1b54; text-transform:uppercase; letter-spacing:.5px;">Primera Atención</span>
                         </div>
-                        <div class="form-paciente-group">
-                            <label>N° FUA</label>
-                            <input type="text" id="form-fua-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
-                        </div>
-                        <div class="form-paciente-group">
-                            <label>FECHA DE ATENCIÓN</label>
-                            <input type="date" id="form-fecha-aten-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
-                        </div>
-                        
-                        <div class="form-paciente-group">
-                            <label>DX</label>
-                            <input type="text" id="form-dx-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
-                        </div>
-                        <div class="form-paciente-group">
-                            <label>PRESION</label>
-                            <input type="text" id="form-presion-2" style="border: 1.5px solid #284b8c; border-radius: 2px;">
-                        </div>
-                        
-                        <!-- El botón REGISTRAR de la segunda atención -->
-                        <div class="form-paciente-group" style="display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-end;">
-                            <span id="msg-segunda-atencion" style="color: #00b85c; font-weight: 700; margin-right: 15px; display: none;"><i class="fas fa-check-circle"></i> Segunda Atención Registrada</span>
-                            <button type="button" class="btn-green" style="margin-top: auto;" onclick="guardarAtencionForm(2)">REGISTRAR</button>
-                        </div>
+                        <i id="chevron-primera" class="fas fa-chevron-up" style="color:#7b839e; transition:.3s;"></i>
                     </div>
-                </form>
+                    <div id="ip-body-primera">
+                        <form id="form-primera-atencion">
+                            <div class="ip-grid">
+                                <div class="ip-field">
+                                    <label class="ip-label">Lote</label>
+                                    <input type="text" id="form-lote" class="ip-input" placeholder="Lote">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">N° FUA</label>
+                                    <input type="text" id="form-fua" class="ip-input" placeholder="N° FUA">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">Fecha de Atención</label>
+                                    <input type="date" id="form-fecha-aten" class="ip-input">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">DX</label>
+                                    <input type="text" id="form-dx" class="ip-input" placeholder="Diagnóstico CIE-10">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">Presión</label>
+                                    <input type="text" id="form-presion" class="ip-input" placeholder="Ej. 120/80">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">Seguro</label>
+                                    <input type="text" id="form-seguro" class="ip-input" placeholder="Tipo de seguro">
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:14px; margin-top:24px; flex-wrap:wrap;">
+                                <span id="msg-primera-atencion" style="color:#00b85c; font-weight:700; display:none; margin-right:auto;">
+                                    <i class="fas fa-check-circle"></i> Primera Atención Registrada
+                                </span>
+                                <button type="button" onclick="guardarAtencionForm(1)"
+                                    style="padding:11px 28px; background:linear-gradient(135deg,#00b85c,#00d66c); color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:.2s;"
+                                    onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                                    <i class="fas fa-save"></i> REGISTRAR
+                                </button>
+                                <button type="button" onclick="mostrarSegundaAtencion()"
+                                    style="padding:11px 28px; background:linear-gradient(135deg,#284b8c,#3a6bc4); color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:.2s;"
+                                    onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                                    Continuar <i class="fas fa-arrow-down"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
+
+            <!-- Tarjeta: Segunda Atención (colapsable) -->
+            <div id="section-segunda-atencion" style="display:none;">
+                <div style="background:#f8faff; border:1px solid #edf1fa; border-radius:14px; padding:28px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; padding-bottom:14px; border-bottom:1.5px solid #edf1fa; cursor:pointer;" onclick="toggleSeccion('ip-body-segunda')">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:34px; height:34px; background:linear-gradient(135deg,#e67e22,#d35400); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-notes-medical" style="color:white; font-size:15px;"></i>
+                            </div>
+                            <span style="font-size:14px; font-weight:700; color:#2b1b54; text-transform:uppercase; letter-spacing:.5px;">Segunda Atención</span>
+                        </div>
+                        <i id="chevron-segunda" class="fas fa-chevron-up" style="color:#7b839e; transition:.3s;"></i>
+                    </div>
+                    <div id="ip-body-segunda">
+                        <form id="form-segunda-atencion">
+                            <div class="ip-grid">
+                                <div class="ip-field">
+                                    <label class="ip-label">Lote</label>
+                                    <input type="text" id="form-lote-2" class="ip-input" placeholder="Lote">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">N° FUA</label>
+                                    <input type="text" id="form-fua-2" class="ip-input" placeholder="N° FUA">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">Fecha de Atención</label>
+                                    <input type="date" id="form-fecha-aten-2" class="ip-input">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">DX</label>
+                                    <input type="text" id="form-dx-2" class="ip-input" placeholder="Diagnóstico CIE-10">
+                                </div>
+                                <div class="ip-field">
+                                    <label class="ip-label">Presión</label>
+                                    <input type="text" id="form-presion-2" class="ip-input" placeholder="Ej. 120/80">
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; gap:14px; margin-top:24px; flex-wrap:wrap;">
+                                <span id="msg-segunda-atencion" style="color:#00b85c; font-weight:700; display:none; margin-right:auto;">
+                                    <i class="fas fa-check-circle"></i> Segunda Atención Registrada
+                                </span>
+                                <button type="button" onclick="guardarAtencionForm(2)"
+                                    style="padding:11px 28px; background:linear-gradient(135deg,#00b85c,#00d66c); color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:.2s;"
+                                    onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                                    <i class="fas fa-save"></i> REGISTRAR
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
+
 
         <div class="card section-container" id="section-seguimiento-pacientes"
             style="{{ 'display:block;' if seccion == 'seguimiento-pacientes' else 'display:none;' }}">
@@ -1301,6 +1408,12 @@
         }
 
         async function buscarPacienteForm() {
+            // Colapsar secciones de atención al hacer nueva búsqueda
+            document.getElementById('section-primera-atencion').style.display = 'none';
+            document.getElementById('section-segunda-atencion').style.display = 'none';
+            // Resetear formularios de atención
+            document.getElementById('form-primera-atencion').reset();
+            document.getElementById('form-segunda-atencion').reset();
             const dni = document.getElementById('form-buscar-dni').value.trim();
             if (!dni || dni.length < 8) {
                 alert("Por favor ingrese un DNI válido de 8 dígitos.");
@@ -1447,25 +1560,34 @@
         }
 
         function mostrarPrimeraAtencion() {
-            document.getElementById('section-primera-atencion').style.display = 'block';
-            
-            // Autocompletar el Lote con los últimos 2 dígitos del año actual si está vacío
+            const sec = document.getElementById('section-primera-atencion');
+            sec.style.display = 'block';
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
             const inputLote = document.getElementById('form-lote');
             if (!inputLote.value) {
-                const currentYear = new Date().getFullYear().toString().slice(-2);
-                inputLote.value = currentYear;
+                inputLote.value = new Date().getFullYear().toString().slice(-2);
             }
         }
 
         function mostrarSegundaAtencion() {
-            document.getElementById('section-segunda-atencion').style.display = 'block';
-            
+            const sec = document.getElementById('section-segunda-atencion');
+            sec.style.display = 'block';
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
             const inputLote = document.getElementById('form-lote-2');
             if (!inputLote.value) {
-                const currentYear = new Date().getFullYear().toString().slice(-2);
-                inputLote.value = currentYear;
+                inputLote.value = new Date().getFullYear().toString().slice(-2);
             }
         }
+
+        function toggleSeccion(bodyId) {
+            const body = document.getElementById(bodyId);
+            const isVisible = body.style.display !== 'none';
+            body.style.display = isVisible ? 'none' : 'block';
+            const chevronId = bodyId === 'ip-body-primera' ? 'chevron-primera' : 'chevron-segunda';
+            const chevron = document.getElementById(chevronId);
+            if (chevron) chevron.style.transform = isVisible ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
 
         async function guardarAtencionForm(num_atencion) {
             const id_paciente = document.getElementById('form-id-paciente').value;
