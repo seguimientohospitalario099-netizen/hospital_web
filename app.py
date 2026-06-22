@@ -1,8 +1,12 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from supabase_auth import UserAttributes
+from supabase_auth.errors import AuthApiError, AuthError
+from functools import wraps
+
 
 
 load_dotenv()
@@ -16,6 +20,177 @@ app = Flask(__name__)
 app.secret_key = 'hospital_san_jose_2026'
 
 # ─────────────────────────────────────────────────────────────
+# AUDITORÍA Y SEGURIDAD (Decoradores y Helpers)
+# ─────────────────────────────────────────────────────────────
+
+def registrar_actividad(username, rol, accion, detalles):
+    """Registra una acción en la tabla de auditoría actividades_hospital."""
+    try:
+        supabase.table('actividades_hospital').insert({
+            'usuario': username,
+            'rol': rol,
+            'accion': accion,
+            'detalles': detalles
+        }).execute()
+    except Exception as e:
+        app.logger.error(f"Error al registrar actividad en la BD: {str(e)}")
+
+def requiere_rol(roles_permitidos):
+    """Middleware/Decorador para restringir el acceso a rutas según el rol del usuario."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user' not in session:
+                flash('Acceso denegado. Por favor, inicie sesión.')
+                return redirect(url_for('home'))
+            if session.get('rol') not in roles_permitidos:
+                flash('Acceso denegado. No tiene los permisos requeridos.')
+                return redirect(url_for('home'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# ─────────────────────────────────────────────────────────────
+# ENDPOINTS DE RECUPERACIÓN Y ACTUALIZACIÓN DE CONTRASEÑA
+# ─────────────────────────────────────────────────────────────
+
+@app.route('/recuperar', methods=['GET', 'POST'])
+def recuperar_contrasena():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        if not email:
+            flash('Por favor, ingrese su correo electrónico.')
+            return redirect(url_for('recuperar_contrasena'))
+
+        try:
+            # Buscar si el usuario existe en nuestra tabla 'usuarios'
+            resp = supabase.table('usuarios').select('*').eq('email', email).execute()
+            
+            # Enfoque seguro para evitar la enumeración de usuarios
+            if len(resp.data) > 0:
+                # Disparar correo de recuperación.
+                # BASE_URL debe ser la URL de producción (ej. https://tu-app.vercel.app)
+                # Fallback a request.url_root solo si no está configurada
+                base_url = os.getenv('BASE_URL', request.url_root.rstrip('/'))
+                redirect_url = base_url.rstrip('/') + url_for('restablecer_contrasena')
+                supabase.auth.reset_password_email(email, options={"redirect_to": redirect_url})
+                
+                # Registrar actividad del sistema (solicitud de recuperación)
+                user_data = resp.data[0]
+                registrar_actividad(
+                    username=user_data['username'],
+                    rol=user_data['rol'],
+                    accion='Solicitud de Recuperación',
+                    detalles=f"Se solicitó un correo de recuperación para el usuario {user_data['username']}."
+                )
+
+            # Mensaje genérico por seguridad
+            flash('Si el correo electrónico está registrado, recibirás un enlace para restablecer tu contraseña.')
+            return redirect(url_for('home'))
+
+        except Exception as e:
+            app.logger.error(f"Error en solicitud de recuperación: {str(e)}")
+            flash('Ocurrió un error al procesar la solicitud. Por favor, inténtelo de nuevo.')
+            return redirect(url_for('recuperar_contrasena'))
+
+    return render_template('recuperar.html')
+
+
+@app.route('/restablecer', methods=['GET', 'POST'])
+def restablecer_contrasena():
+    # Obtener el código de recuperación de PKCE de los argumentos de consulta si existe
+    code = request.args.get('code', '')
+    
+    if request.method == 'POST':
+        new_password = request.form.get('password', '').strip()
+        code = request.form.get('code', '').strip() or code
+        access_token = request.form.get('access_token', '').strip()
+        refresh_token = request.form.get('refresh_token', '').strip()
+
+        if not new_password:
+            flash('Por favor, ingrese su nueva contraseña.')
+            return render_template('restablecer.html', code=code)
+
+        if len(new_password) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres.')
+            return render_template('restablecer.html', code=code)
+
+        try:
+            # Validar y autenticar la sesión del usuario usando el token/código proporcionado
+            auth_resp = None
+            if code:
+                # Flujo PKCE: intercambiar código por sesión
+                auth_resp = supabase.auth.exchange_code_for_session({"auth_code": code})
+            elif access_token and refresh_token:
+                # Flujo Implícito: establecer la sesión con el access_token y refresh_token
+                auth_resp = supabase.auth.set_session(access_token, refresh_token)
+            else:
+                flash('El enlace de recuperación es inválido, expiró o no contiene un token válido.')
+                return redirect(url_for('home'))
+
+            if not auth_resp or not auth_resp.user:
+                flash('No se pudo validar la sesión de recuperación. Inténtelo de nuevo.')
+                return redirect(url_for('home'))
+
+            # Correo electrónico del usuario autenticado
+            email = auth_resp.user.email
+
+            # Verificar el rol y existencia del usuario en la tabla 'usuarios'
+            user_resp = supabase.table('usuarios').select('*').eq('email', email).execute()
+            if len(user_resp.data) == 0:
+                flash('Usuario no encontrado en el sistema hospitalario.')
+                return redirect(url_for('home'))
+
+            user_data = user_resp.data[0]
+            username = user_data['username']
+            rol = user_data['rol']
+
+            # 1. Actualizar la contraseña en Supabase Auth
+            supabase.auth.update_user(UserAttributes(password=new_password))
+
+            # 2. Actualizar la contraseña en nuestra tabla custom 'usuarios'
+            supabase.table('usuarios').update({'password': new_password}).eq('email', email).execute()
+
+            # 3. Registrar actividad en la tabla de auditoría actividades_hospital (Validación de rol y lógica de negocio)
+            detalles_auditoria = f"Restablecimiento exitoso. Rol verificado: {rol}."
+            if rol == 'administrador':
+                detalles_auditoria += " (Se aplicaron políticas de alta seguridad para Administrador)."
+            elif rol == 'desarrollador':
+                detalles_auditoria += " (Se aplicaron políticas de nivel Desarrollador)."
+            
+            registrar_actividad(
+                username=username,
+                rol=rol,
+                accion='Restablecer Contraseña',
+                detalles=detalles_auditoria
+            )
+
+            # Cerrar sesión en el cliente de Supabase para que no quede autenticado
+            try:
+                supabase.auth.sign_out()
+            except:
+                pass
+
+            flash('Tu contraseña ha sido actualizada con éxito. Ya puedes iniciar sesión.')
+            return redirect(url_for('home'))
+
+        except AuthApiError as e_api:
+            app.logger.error(f"Error de Supabase Auth en restablecimiento: {str(e_api)}")
+            # Manejo elegante de errores de tokens expirados o inválidos
+            mensaje_error = 'El enlace de recuperación es inválido o ha expirado.'
+            if 'weak_password' in str(e_api).lower():
+                mensaje_error = 'La contraseña ingresada es muy débil.'
+            flash(mensaje_error)
+            return render_template('restablecer.html', code=code)
+        except Exception as e:
+            app.logger.error(f"Error general en restablecimiento: {str(e)}")
+            flash('Ocurrió un error inesperado al restablecer la contraseña.')
+            return render_template('restablecer.html', code=code)
+
+    return render_template('restablecer.html', code=code)
+
+# ─────────────────────────────────────────────────────────────
+
 # CATÁLOGO DE ESTABLECIMIENTOS (para matching por nombre)
 # ─────────────────────────────────────────────────────────────
 _ESTABLECIMIENTOS = {
@@ -39,6 +214,9 @@ _ESTABLECIMIENTOS = {
 _NOMBRE_A_CODIGO = {v.upper(): k for k, v in _ESTABLECIMIENTOS.items()}
 _cache_est: dict[str, int] = {}   # cache en memoria por request
 _cache_pac: dict[str, int] = {}
+
+# Usuarios activos en memoria
+usuarios_activos = set()
 
 
 def _limpiar(val) -> str | None:
@@ -124,6 +302,7 @@ def login():
         if len(response.data) > 0 and response.data[0]['password'] == password:
             session['user'] = usuario
             session['rol'] = response.data[0]['rol']
+            usuarios_activos.add(usuario)
             
             if session['rol'] in ['administrador', 'desarrollador']:
                 return redirect(url_for('panel_control', seccion='gestion-usuarios'))
@@ -139,6 +318,9 @@ def login():
 
 @app.route('/logout')
 def logout():
+    user = session.get('user')
+    if user in usuarios_activos:
+        usuarios_activos.remove(user)
     session.clear()
     return redirect(url_for('home'))
 
@@ -161,24 +343,53 @@ def panel_control(seccion='gestion-usuarios'):
 
     # Lógica de creación (POST)
     if request.method == 'POST' and seccion == 'gestion-usuarios':
-        nuevo_user = request.form.get('nuevo_user')
-        nueva_pass = request.form.get('nueva_pass')
+        nuevo_user = request.form.get('nuevo_user', '').strip()
+        nuevo_email = request.form.get('nuevo_email', '').strip()
+        nueva_pass = request.form.get('nueva_pass', '').strip()
         rol_asignado = request.form.get('rol')
 
-        if rol_actual == 'administrador' and rol_asignado == 'administrador':
+        if not nuevo_user or not nueva_pass or not nuevo_email:
+            flash('Error: Todos los campos son obligatorios.')
+        elif rol_actual == 'administrador' and rol_asignado == 'administrador':
             flash('Error: Como Administrador no puedes crear otros Administradores.')
         else:
             try:
                 existing = supabase.table('usuarios').select("username").eq("username", nuevo_user).execute()
+                existing_email = supabase.table('usuarios').select("email").eq("email", nuevo_email).execute()
+                
                 if len(existing.data) > 0:
                     flash(f'Error: El usuario "{nuevo_user}" ya existe.')
+                elif len(existing_email.data) > 0:
+                    flash(f'Error: El correo electrónico "{nuevo_email}" ya está registrado.')
                 else:
+                    # 1. Registrar en Supabase Auth de forma segura (admin, auto-confirm)
+                    try:
+                        from supabase_auth import AdminUserAttributes
+                        supabase.auth.admin.create_user(AdminUserAttributes(
+                            email=nuevo_email,
+                            password=nueva_pass,
+                            email_confirm=True
+                        ))
+                    except Exception as auth_err:
+                        app.logger.warning(f"No se pudo crear en Supabase Auth (puede que ya exista): {str(auth_err)}")
+
+                    # 2. Insertar en tabla de usuarios local
                     supabase.table('usuarios').insert({
                         "username": nuevo_user,
                         "password": nueva_pass,
                         "rol": rol_asignado,
-                        "creado_por": usuario_actual
+                        "creado_por": usuario_actual,
+                        "email": nuevo_email
                     }).execute()
+
+                    # 3. Registrar actividad en logs de auditoría
+                    registrar_actividad(
+                        username=usuario_actual,
+                        rol=rol_actual,
+                        accion='Crear Usuario',
+                        detalles=f"Usuario '{nuevo_user}' (rol: {rol_asignado}, email: {nuevo_email}) creado por {usuario_actual}."
+                    )
+
                     flash(f'Usuario "{nuevo_user}" creado con éxito.')
             except Exception as e:
                 flash(f'Error al crear el usuario en la BD: {str(e)}')
@@ -201,7 +412,8 @@ def panel_control(seccion='gestion-usuarios'):
             usuarios_filtrados[nombre] = {
                 'pass': fila['password'],
                 'rol': fila['rol'],
-                'creado_por': fila.get('creado_por')
+                'creado_por': fila.get('creado_por'),
+                'email': fila.get('email')
             }
 
     # ── Consulta de pacientes desde las tablas normalizadas ──
@@ -245,7 +457,60 @@ def panel_control(seccion='gestion-usuarios'):
 
     return render_template('panel_control.html', seccion=seccion,
                            usuarios_lista=usuarios_filtrados,
-                           pacientes_lista=pacientes_lista)
+                           pacientes_lista=pacientes_lista,
+                           usuarios_activos=usuarios_activos)
+
+@app.route('/perfil/foto/<usuario>')
+def foto_perfil(usuario):
+    try:
+        # Intentar con .jpg primero, es el predeterminado
+        res = supabase.storage.from_("perfiles").get_public_url(f"{usuario}.jpg")
+        return redirect(res)
+    except:
+        return redirect(f"https://ui-avatars.com/api/?name={usuario}&background=random")
+
+@app.route('/upload_profile', methods=['POST'])
+def upload_profile():
+    if 'user' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        return jsonify({'error': 'Solo se permiten imágenes (png, jpg, jpeg)'}), 400
+
+    usuario = session.get('user')
+    try:
+        # Extraer extensión y formar nuevo nombre: ej: admin.jpg
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        if ext == 'jpeg': ext = 'jpg'
+        filename = f"{usuario}.{ext}"
+
+        # Leer archivo en memoria
+        file_bytes = file.read()
+
+        # Intentar eliminar si existe previamente (ignorar si no existe)
+        try:
+            supabase.storage.from_("perfiles").remove([f"{usuario}.jpg", f"{usuario}.png"])
+        except:
+            pass
+
+        # Subir el nuevo archivo
+        supabase.storage.from_("perfiles").upload(
+            path=filename,
+            file=file_bytes,
+            file_options={"content-type": file.content_type}
+        )
+
+        return jsonify({'success': True, 'message': 'Foto de perfil actualizada'})
+    except Exception as e:
+        app.logger.error(f"Error subiendo foto de perfil: {str(e)}")
+        return jsonify({'error': f'Error interno: {str(e)}'}), 500
 
 @app.route('/upload_pacientes', methods=['POST'])
 def upload_pacientes():
@@ -387,19 +652,62 @@ def editar_usuario(nombre_original):
                 flash('Error: No tienes permiso para editar este usuario.')
                 return redirect(url_for('panel_control', seccion='gestion-usuarios'))
 
-        nuevo_nombre = request.form.get('edit_user')
-        nueva_pass = request.form.get('edit_pass')
+        nuevo_nombre = request.form.get('edit_user', '').strip()
+        nuevo_email = request.form.get('edit_email', '').strip()
+        nueva_pass = request.form.get('edit_pass', '').strip()
         nuevo_rol = request.form.get('edit_rol')
 
         if rol_actual == 'administrador' and nuevo_rol == 'administrador':
             flash('Error: No puedes asignar el rol de Administrador.')
             return redirect(url_for('panel_control', seccion='gestion-usuarios'))
 
+        old_email = datos_objetivo.get('email')
+
+        # 1. Actualizar en base de datos local
         supabase.table('usuarios').update({
             "username": nuevo_nombre,
             "password": nueva_pass,
-            "rol": nuevo_rol
+            "rol": nuevo_rol,
+            "email": nuevo_email
         }).eq("username", nombre_original).execute()
+
+        # 2. Sincronizar cambios en Supabase Auth
+        if old_email:
+            try:
+                auth_users = supabase.auth.admin.list_users()
+                target_user = None
+                for au in auth_users:
+                    if au.email and au.email.lower() == old_email.lower():
+                        target_user = au
+                        break
+                if target_user:
+                    from supabase_auth import AdminUserAttributes
+                    attrs = AdminUserAttributes(
+                        email=nuevo_email,
+                        password=nueva_pass,
+                        email_confirm=True
+                    )
+                    supabase.auth.admin.update_user_by_id(target_user.id, attrs)
+            except Exception as auth_err:
+                app.logger.error(f"Error sincronizando edición en Supabase Auth: {str(auth_err)}")
+        elif nuevo_email:
+            try:
+                from supabase_auth import AdminUserAttributes
+                supabase.auth.admin.create_user(AdminUserAttributes(
+                    email=nuevo_email,
+                    password=nueva_pass,
+                    email_confirm=True
+                ))
+            except Exception as auth_err:
+                app.logger.error(f"Error creando usuario en Supabase Auth al editar: {str(auth_err)}")
+
+        # 3. Registro de auditoría
+        registrar_actividad(
+            username=usuario_operador,
+            rol=rol_actual,
+            accion='Editar Usuario',
+            detalles=f"Modificó el usuario '{nombre_original}' a '{nuevo_nombre}' (rol: {nuevo_rol}, email: {nuevo_email})."
+        )
 
         # Si el usuario editado es uno mismo
         if session.get('user') == nombre_original:
@@ -438,7 +746,37 @@ def eliminar_usuario(nombre_user):
 
     if nombre_user != usuario_operador:
         try:
+            # Buscar el email antes de eliminar
+            email_del = None
+            try:
+                user_del_resp = supabase.table('usuarios').select("email").eq("username", nombre_user).execute()
+                if len(user_del_resp.data) > 0:
+                    email_del = user_del_resp.data[0].get('email')
+            except Exception as e:
+                app.logger.warning(f"No se pudo consultar el email para eliminar de Supabase Auth: {str(e)}")
+
+            # 1. Eliminar de la tabla local
             supabase.table('usuarios').delete().eq("username", nombre_user).execute()
+
+            # 2. Eliminar de Supabase Auth si corresponde
+            if email_del:
+                try:
+                    auth_users = supabase.auth.admin.list_users()
+                    for au in auth_users:
+                        if au.email and au.email.lower() == email_del.lower():
+                            supabase.auth.admin.delete_user(au.id)
+                            break
+                except Exception as auth_err:
+                    app.logger.error(f"Error al eliminar de Supabase Auth: {str(auth_err)}")
+
+            # 3. Registro de auditoría
+            registrar_actividad(
+                username=usuario_operador,
+                rol=rol_actual,
+                accion='Eliminar Usuario',
+                detalles=f"Eliminó al usuario '{nombre_user}' (email anterior: {email_del})."
+            )
+
             flash(f'Usuario eliminado permanentemente.')
         except Exception as e:
             flash(f'Error al eliminar usuario: {str(e)}')
