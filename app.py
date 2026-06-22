@@ -1,6 +1,6 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort, make_response
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from supabase_auth import UserAttributes
@@ -455,10 +455,14 @@ def panel_control(seccion='gestion-usuarios'):
         pacientes_lista = []
         flash(f'Error consultando atenciones: {str(e)}')
 
-    return render_template('panel_control.html', seccion=seccion,
+    response = make_response(render_template('panel_control.html', seccion=seccion,
                            usuarios_lista=usuarios_filtrados,
                            pacientes_lista=pacientes_lista,
-                           usuarios_activos=usuarios_activos)
+                           usuarios_activos=usuarios_activos))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/perfil/foto/<usuario>')
 def foto_perfil(usuario):
